@@ -40,3 +40,10 @@ summary{list-style:none}
 @media (prefers-reduced-motion: reduce){
   *{animation-duration:.01ms !important;animation-iteration-count:1 !important;transition-duration:.01ms !important}
 }
+[data-r="loop"][data-off="1"],[data-r="loopstrip"][data-off="1"]{animation-play-state:paused !important}
+[data-r="batrack"]{scrollbar-width:none}
+[data-r="batrack"]::-webkit-scrollbar{display:none}
+[data-r="batrack"]:focus-visible{outline:2px solid #FF3C88;outline-offset:6px}
+@media (max-width:1020px){
+  [data-r="hero-outer"]{padding-top:clamp(18px,3.5vh,36px) !important}
+}

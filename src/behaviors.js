@@ -61,6 +61,8 @@ function wireScroll(refs, state, cleanup) {
   const nav = refs.navRef.current, prog = refs.progressRef.current;
   const art = refs.heroBgRef.current, cta = refs.stickyCtaRef.current;
   const reduced = prefersReducedMotion();
+  const navLogo = nav ? nav.querySelector('[data-nav-logo]') : null;
+  const small = window.matchMedia('(max-width: 1020px)');
   let ticking = false;
   function onScroll() {
     if (ticking) return; ticking = true;
@@ -86,6 +88,11 @@ function wireScroll(refs, state, cleanup) {
           nav.style.paddingBottom = '18px';
         }
       }
+      if (navLogo) {
+        const hide = small.matches && y <= 60;
+        navLogo.style.opacity = hide ? '0' : '1';
+        navLogo.style.pointerEvents = hide ? 'none' : 'auto';
+      }
       if (art && !reduced && y < window.innerHeight * 1.2) {
         art.style.transform = 'translate3d(0,' + (y * 0.05).toFixed(2) + 'px,0) scale(1.04)';
       }
@@ -98,8 +105,9 @@ function wireScroll(refs, state, cleanup) {
     });
   }
   window.addEventListener('scroll', onScroll, { passive: true });
+  window.addEventListener('resize', onScroll, { passive: true });
   onScroll();
-  cleanup.push(() => window.removeEventListener('scroll', onScroll));
+  cleanup.push(() => { window.removeEventListener('scroll', onScroll); window.removeEventListener('resize', onScroll); });
 }
 
 function wireRotator(refs, cleanup) {
@@ -132,7 +140,7 @@ function wireServices(root, refs, cleanup) {
   const panels = root.querySelectorAll('[data-svc-panel]');
   const medias = root.querySelectorAll('[data-svc-media]');
   const lines = root.querySelectorAll('[data-svc-line]');
-  const labels = ['Airbnb turnovers', 'Airbnb setups & styling', 'Residential cleaning', 'Commercial cleaning', 'Hotel cleaning', 'After builders cleaning'];
+  const labels = ['Airbnb turnovers', 'Airbnb setups & styling', 'Residential cleaning', 'Hotel cleaning'];
   const labelEl = refs.svcLabelRef.current, numEl = refs.svcNumRef.current;
   let current = -1;
   function activate(i) {
@@ -209,10 +217,121 @@ function wireLoopSpeed(refs, props) {
   if (refs.loopBRef.current) refs.loopBRef.current.style.animationDuration = Math.round(s * 1.22) + 's';
 }
 
+function wireLoops(root, cleanup) {
+  const loops = root.querySelectorAll('[data-r="loop"],[data-r="loopstrip"]');
+  function load(loop) {
+    loop.querySelectorAll('img[data-src]').forEach((img) => {
+      const show = () => { img.style.opacity = '1'; };
+      img.addEventListener('load', show, { once: true });
+      img.addEventListener('error', show, { once: true });
+      const set = img.getAttribute('data-srcset');
+      if (set) img.srcset = set;
+      img.src = img.getAttribute('data-src');
+      img.removeAttribute('data-src');
+      img.removeAttribute('data-srcset');
+    });
+  }
+  if (!('IntersectionObserver' in window)) { loops.forEach(load); return; }
+  const near = new IntersectionObserver((entries) => {
+    entries.forEach((e) => {
+      if (!e.isIntersecting) return;
+      load(e.target.firstElementChild);
+      near.unobserve(e.target);
+    });
+  }, { rootMargin: '150% 0px 150% 0px' });
+  const visible = new IntersectionObserver((entries) => {
+    entries.forEach((e) => e.target.firstElementChild.setAttribute('data-off', e.isIntersecting ? '0' : '1'));
+  }, { rootMargin: '10% 0px 10% 0px' });
+  loops.forEach((loop) => {
+    const box = loop.parentElement;
+    if (loop.querySelector('img[data-src]')) near.observe(box);
+    visible.observe(box);
+  });
+  cleanup.push(() => { near.disconnect(); visible.disconnect(); });
+}
+
+// Before / after carousel: native horizontal scroll with snap, arrow buttons, a progress bar
+// and click-and-drag for mouse users.
+function wireBeforeAfter(root, refs, cleanup) {
+  const track = refs.baTrackRef.current; if (!track) return;
+  const bar = refs.baBarRef.current;
+  const prev = root.querySelector('[data-ba-nav="prev"]');
+  const next = root.querySelector('[data-ba-nav="next"]');
+  const cards = track.querySelectorAll('[data-ba-card]');
+  const smooth = prefersReducedMotion() ? 'auto' : 'smooth';
+  function step() {
+    if (cards.length < 2) return track.clientWidth;
+    return cards[1].offsetLeft - cards[0].offsetLeft;
+  }
+  let ticking = false;
+  function update() {
+    ticking = false;
+    const max = track.scrollWidth - track.clientWidth;
+    const x = track.scrollLeft;
+    if (bar) bar.style.transform = 'scaleX(' + (max > 0 ? Math.min(1, (x + track.clientWidth) / track.scrollWidth) : 1).toFixed(4) + ')';
+    if (prev) { prev.disabled = x <= 2; prev.style.opacity = x <= 2 ? '.35' : '1'; }
+    if (next) { next.disabled = x >= max - 2; next.style.opacity = x >= max - 2 ? '.35' : '1'; }
+  }
+  function onScroll() { if (!ticking) { ticking = true; requestAnimationFrame(update); } }
+  const goPrev = () => track.scrollBy({ left: -step(), behavior: smooth });
+  const goNext = () => track.scrollBy({ left: step(), behavior: smooth });
+
+  let dragging = false, moved = false, startX = 0, startLeft = 0, snapTimer = null;
+  function down(e) {
+    if (e.pointerType !== 'mouse' || e.button !== 0) return;
+    dragging = true; moved = false; startX = e.clientX; startLeft = track.scrollLeft;
+  }
+  function move(e) {
+    if (!dragging) return;
+    const dx = e.clientX - startX;
+    if (!moved && Math.abs(dx) > 4) {
+      moved = true;
+      clearTimeout(snapTimer);
+      track.style.scrollSnapType = 'none';
+      track.style.cursor = 'grabbing';
+    }
+    if (moved) track.scrollLeft = startLeft - dx;
+  }
+  function up() {
+    if (!dragging) return;
+    dragging = false;
+    if (!moved) return;
+    track.style.cursor = 'grab';
+    const s = step() || 1;
+    const max = track.scrollWidth - track.clientWidth;
+    const delta = track.scrollLeft - startLeft;
+    const pos = track.scrollLeft / s;
+    // a clear flick moves on to the next card in that direction; a small nudge settles on the nearest
+    const index = Math.abs(delta) > 50 ? (delta > 0 ? Math.ceil(pos) : Math.floor(pos)) : Math.round(pos);
+    const target = Math.max(0, Math.min(max, index * s));
+    track.scrollTo({ left: target, behavior: smooth });
+    snapTimer = setTimeout(() => { track.style.scrollSnapType = 'x mandatory'; }, 600);
+  }
+  track.addEventListener('scroll', onScroll, { passive: true });
+  track.addEventListener('pointerdown', down);
+  window.addEventListener('pointermove', move);
+  window.addEventListener('pointerup', up);
+  window.addEventListener('resize', onScroll, { passive: true });
+  if (prev) prev.addEventListener('click', goPrev);
+  if (next) next.addEventListener('click', goNext);
+  update();
+  cleanup.push(() => {
+    clearTimeout(snapTimer);
+    track.removeEventListener('scroll', onScroll);
+    track.removeEventListener('pointerdown', down);
+    window.removeEventListener('pointermove', move);
+    window.removeEventListener('pointerup', up);
+    window.removeEventListener('resize', onScroll);
+    if (prev) prev.removeEventListener('click', goPrev);
+    if (next) next.removeEventListener('click', goNext);
+  });
+}
+
 function wireWhats(refs, cleanup) {
   const el = refs.whatsRef.current; if (!el) return;
   if (prefersReducedMotion()) { el.style.opacity = '1'; el.style.transform = 'none'; return; }
-  let lastY = window.scrollY || 0, vel = 0, off = 0, rot = 0, raf = null, shown = false;
+  let lastY = window.scrollY || 0, vel = 0, off = 0, rot = 0, raf = null, shown = false, running = false;
+  function wake() { if (!running) { running = true; raf = requestAnimationFrame(loop); } }
   function onScroll() {
     const y = window.scrollY || 0;
     vel += (y - lastY);
@@ -223,6 +342,7 @@ function wireWhats(refs, cleanup) {
       el.style.opacity = want ? '1' : '0';
       el.style.pointerEvents = want ? 'auto' : 'none';
     }
+    wake();
   }
   function loop() {
     vel *= 0.86;
@@ -230,13 +350,17 @@ function wireWhats(refs, cleanup) {
     off += (target - off) * 0.14;
     rot += ((off * 0.5) - rot) * 0.12;
     const base = shown ? 0 : 26;
+    if (Math.abs(vel) < 0.02 && Math.abs(off) < 0.02 && Math.abs(rot) < 0.02) {
+      vel = 0; off = 0; rot = 0; running = false;
+      el.style.transform = 'translate3d(0,' + base + 'px,0)';
+      return;
+    }
     const squash = 1 - Math.min(0.12, Math.abs(off) / 340);
     el.style.transform = 'translate3d(0,' + (base + off).toFixed(2) + 'px,0) rotate(' + rot.toFixed(2) + 'deg) scaleY(' + (1 / squash).toFixed(3) + ') scaleX(' + squash.toFixed(3) + ')';
     raf = requestAnimationFrame(loop);
   }
   window.addEventListener('scroll', onScroll, { passive: true });
   onScroll();
-  raf = requestAnimationFrame(loop);
   cleanup.push(() => { window.removeEventListener('scroll', onScroll); cancelAnimationFrame(raf); });
 }
 
@@ -259,6 +383,8 @@ export function initSite(root, refs, props, state) {
   wireMagnetic(root, cleanup);
   wireSparkle(refs, props, cleanup);
   wireLoopSpeed(refs, props);
+  wireLoops(root, cleanup);
+  wireBeforeAfter(root, refs, cleanup);
   wireWhats(refs, cleanup);
   const stopInteractive = initInteractiveStyles(root);
   cleanup.push(stopInteractive);

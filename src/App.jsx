@@ -2,6 +2,30 @@ import { useRef, useEffect } from 'react';
 import { css } from './utils.js';
 import { initSite } from './behaviors.js';
 
+// 1×1 transparent GIF: placeholder for images whose real source is chosen by <picture> or set on demand.
+const PX = 'data:image/gif;base64,R0lGODlhAQABAAAAACH5BAEKAAEALAAAAAABAAEAAAICTAEAOw==';
+
+// Intrinsic size of each gallery photo (every one ships as 480 / 800 / 1200 px wide WebP).
+const GAL = { g1: [1536, 2048], g2: [1536, 2048], g4: [1536, 2048], g5: [1536, 2048], g6: [1536, 2048], g7: [2048, 1536], g8: [1152, 2048] };
+
+function galSet(id) {
+  const base = 'assets/gallery/' + id;
+  return base + '-480.webp 480w, ' + base + '-800.webp 800w, ' + base + '-1200.webp 1200w';
+}
+
+// Attributes for a responsive gallery <img>; `sizes` tells the browser how wide it is drawn.
+function gimg(id, sizes) {
+  return { src: 'assets/gallery/' + id + '-800.webp', srcSet: galSet(id), sizes, width: GAL[id][0], height: GAL[id][1], decoding: 'async' };
+}
+
+const SZ_PANEL_SM = '(max-width:1020px) 92vw, 1px';
+const SZ_PANEL = '(min-width:1021px) 46vw, 1px';
+const SZ_INSET = '(min-width:1021px) 15vw, 1px';
+const SZ_STYLE = '(max-width:1020px) 92vw, 44vw';
+const SZ_CARD = '(max-width:640px) 92vw, (max-width:1020px) 46vw, 31vw';
+const SZ_LOOP = '(max-width:900px) 160px, 345px';
+const SZ_LOOP_WIDE = '(max-width:900px) 280px, 615px';
+
 export default function App({ accentPink = '#E90063', loopSpeed = 64, showLoader = true, sparkleHover = true } = {}) {
   const rootRef = useRef(null);
   const loaderRef = useRef(null);
@@ -24,24 +48,43 @@ export default function App({ accentPink = '#E90063', loopSpeed = 64, showLoader
   const loopBRef = useRef(null);
   const stripRef = useRef(null);
   const sparkleRef = useRef(null);
-  const stateRef = useRef({ ctaDismissed: false });
+  const baTrackRef = useRef(null);
+  const baBarRef = useRef(null);
+  const stateRef = useRef({ ctaDismissed: false, tagSeq: 0 });
 
   const props = { accentPink, loopSpeed, showLoader, sparkleHover };
   const year = new Date().getFullYear();
 
   const gal = [
-    { src: 'assets/gallery/g1.jpeg', alt: 'Bedroom prepared for the next guest arrival', tag: 'Airbnb', sub: 'Turnover' },
-    { src: 'assets/gallery/g6.jpeg', alt: 'Styled bedroom with velvet headboard and layered textiles', tag: 'Styling', sub: 'Presentation' },
-    { src: 'assets/gallery/g4.jpeg', alt: 'Bedroom with fresh linen and folded towels', tag: 'Residential', sub: 'Property care' },
-    { src: 'assets/gallery/g7.jpeg', alt: 'Guest bedroom prepared with lamps and artwork', tag: 'Guest ready', sub: 'Final details' },
-    { src: 'assets/gallery/g2.jpeg', alt: 'Bed made with towels stacked for arrival', tag: 'Linen', sub: 'Prepared' },
-    { src: 'assets/gallery/g5.jpeg', alt: 'Bedroom corner styled with cushions and plant', tag: 'Homes', sub: 'Detail' },
-    { src: 'assets/gallery/g1.jpeg', alt: 'Bedroom styled with towels rolled on the bed', tag: 'Short stay', sub: 'Reset' }
+    { id: 'g1', alt: 'Bedroom prepared for the next guest arrival', tag: 'Airbnb', sub: 'Turnover' },
+    { id: 'g6', alt: 'Styled bedroom with velvet headboard and layered textiles', tag: 'Styling', sub: 'Presentation' },
+    { id: 'g4', alt: 'Bedroom with fresh linen and folded towels', tag: 'Residential', sub: 'Property care' },
+    { id: 'g7', alt: 'Guest bedroom prepared with lamps and artwork', tag: 'Guest ready', sub: 'Final details' },
+    { id: 'g2', alt: 'Bed made with towels stacked for arrival', tag: 'Linen', sub: 'Prepared' },
+    { id: 'g5', alt: 'Bedroom corner styled with cushions and plant', tag: 'Homes', sub: 'Detail' },
+    { id: 'g8', alt: 'Room made up with towels and layered throws', tag: 'Short stay', sub: 'Reset' }
   ];
   const galB = gal.slice(3).concat(gal.slice(0, 3));
   const wrap = (list) => list.concat(list);
   const loopA = wrap(gal);
   const loopB = wrap(galB);
+
+  // Before / after pairs. `labelled` = the photo already carries its own "Before" / "After" caption.
+  const results = [
+    { id: 'oven-door', title: 'Oven door glass', tag: 'Oven cleaning', labelled: true },
+    { id: 'floor', title: 'Floors & skirting', tag: 'Deep cleaning' },
+    { id: 'hob', title: 'Electric hob', tag: 'Appliance cleaning' },
+    { id: 'sink', title: 'Kitchen sink', tag: 'Deep cleaning' },
+    { id: 'oven-interior', title: 'Oven interior', tag: 'Oven cleaning', labelled: true },
+    { id: 'baking-tray', title: 'Baking tray', tag: 'Appliance cleaning' },
+    { id: 'mugs', title: 'Tea-stained mugs', tag: 'Kitchen detail' },
+    { id: 'oven-base', title: 'Oven base', tag: 'Oven cleaning', labelled: true }
+  ];
+  const baImg = (id, kind) => ({
+    src: 'assets/before-after/' + id + '-' + kind + '-600.webp',
+    srcSet: 'assets/before-after/' + id + '-' + kind + '-320.webp 320w, assets/before-after/' + id + '-' + kind + '-600.webp 600w',
+    sizes: '(max-width:640px) 39vw, 250px', width: 600, height: 750, loading: 'lazy', decoding: 'async', draggable: false
+  });
 
   const groupA = [
     { t: 'Airbnb turnovers', d: 'Complete between-guest cleaning to ensure the property is fresh, spotless and ready for the next check-in. Bedrooms, bathrooms, kitchens, living areas, linen changes and finishing details are prepared for a strong guest arrival.' },
@@ -85,7 +128,7 @@ export default function App({ accentPink = '#E90063', loopSpeed = 64, showLoader
     const refs = {
       rootRef, loaderRef, loaderMarkRef, loaderTxtRef, progressRef, navRef, menuRef,
       heroBgRef, rotatorRef, rotatorRefSm, svcLabelRef, svcNumRef, styleImgRef,
-      formMsgRef, stickyCtaRef, sparkleTextRef, whatsRef, loopARef, loopBRef
+      formMsgRef, stickyCtaRef, sparkleTextRef, whatsRef, loopARef, loopBRef, baTrackRef, baBarRef
     };
     return initSite(rootRef.current, refs, props, stateRef.current);
     // eslint-disable-next-line react-hooks/exhaustive-deps
@@ -131,16 +174,25 @@ export default function App({ accentPink = '#E90063', loopSpeed = 64, showLoader
   }
 
   function pickTag(e) {
-    const src = e.currentTarget.getAttribute('data-tag');
+    const id = e.currentTarget.getAttribute('data-tag');
     const img = styleImgRef.current;
-    if (!img || !src) return;
+    if (!img || !GAL[id]) return;
+    const seq = ++stateRef.current.tagSeq;
+    const started = Date.now();
     img.style.opacity = '0';
     img.style.transform = 'scale(1.03)';
-    setTimeout(() => {
-      img.src = src;
+    const pre = new Image();
+    pre.sizes = SZ_STYLE;
+    pre.srcset = galSet(id);
+    pre.src = 'assets/gallery/' + id + '-800.webp';
+    const show = () => setTimeout(() => {
+      if (seq !== stateRef.current.tagSeq) return;
+      img.srcset = pre.srcset;
+      img.src = pre.src;
       img.style.opacity = '1';
       img.style.transform = 'scale(1)';
-    }, 260);
+    }, Math.max(0, 260 - (Date.now() - started)));
+    if (pre.decode) pre.decode().then(show, show); else { pre.onload = show; pre.onerror = show; }
     const sibs = e.currentTarget.parentElement.children;
     for (let i = 0; i < sibs.length; i++) {
       sibs[i].style.borderColor = 'rgba(17,21,18,.18)';
@@ -193,7 +245,7 @@ export default function App({ accentPink = '#E90063', loopSpeed = 64, showLoader
 
   {/* LOADER */}
   <div ref={loaderRef} style={css(`position:fixed;inset:0;z-index:9999;background:var(--ivory);display:flex;flex-direction:column;align-items:center;justify-content:center;gap:26px;transition:opacity .8s cubic-bezier(.16,1,.3,1),visibility .8s`)}>
-    <img src="assets/brand/logo-primary.png" alt="" style={css(`width:min(260px,52vw);height:auto;opacity:0;transition:opacity .8s ease .1s`)} ref={loaderMarkRef} />
+    <img src="assets/brand/logo-440.webp" alt="" width="440" height="283" style={css(`width:min(260px,52vw);height:auto;opacity:0;transition:opacity .8s ease .1s`)} ref={loaderMarkRef} />
     <div style={css(`width:min(240px,46vw);height:1px;background:rgba(10,61,28,.14);position:relative;overflow:hidden`)}>
       <div style={css(`position:absolute;inset:0;background:var(--pink);transform-origin:left;animation:csSweep 1.1s cubic-bezier(.65,0,.35,1) forwards .15s`)}></div>
     </div>
@@ -209,14 +261,14 @@ export default function App({ accentPink = '#E90063', loopSpeed = 64, showLoader
 
   {/* NAV */}
   <header ref={navRef} style={css(`position:fixed;top:0;left:0;right:0;z-index:800;padding:16px clamp(16px,4vw,48px);display:grid;grid-template-columns:auto 1fr auto;align-items:center;column-gap:clamp(16px,3vw,48px);transition:background .5s cubic-bezier(.16,1,.3,1),backdrop-filter .5s,box-shadow .5s,padding .5s`)}>
-    <a href="#top" onClick={onNavClick} style={css(`display:flex;align-items:center;transition:transform .4s cubic-bezier(.16,1,.3,1)`)} data-hover="transform:translateY(-2px)">
-      <img src="assets/brand/logo-primary.png" alt="Cleaning Stars — we make it sparkle" style={css(`height:clamp(34px,3.4vw,46px);width:auto;display:block`)} />
+    <a href="#top" onClick={onNavClick} data-nav-logo="1" style={css(`display:flex;align-items:center;transition:transform .4s cubic-bezier(.16,1,.3,1),opacity .4s`)} data-hover="transform:translateY(-2px)">
+      <img src="assets/brand/logo-440.webp" alt="Cleaning Stars — we make it sparkle" width="440" height="283" style={css(`height:clamp(34px,3.4vw,46px);width:auto;display:block`)} />
     </a>
     <nav data-r="navlinks" aria-label="Primary" style={css(`display:flex;align-items:center;justify-content:center;gap:clamp(12px,1.9vw,30px)`)}>
       <a href="#services" onClick={onNavClick} style={css(`font-size:11.5px;letter-spacing:.13em;text-transform:uppercase;font-weight:500;color:var(--ink);padding:8px 0;white-space:nowrap;transition:color .35s`)} data-hover="color:#E90063">Services</a>
       <a href="#holiday" onClick={onNavClick} style={css(`font-size:11.5px;letter-spacing:.13em;text-transform:uppercase;font-weight:500;color:var(--ink);padding:8px 0;white-space:nowrap;transition:color .35s`)} data-hover="color:#E90063">Airbnb &amp; Holiday Lets</a>
       <a href="#directory" onClick={onNavClick} style={css(`font-size:11.5px;letter-spacing:.13em;text-transform:uppercase;font-weight:500;color:var(--ink);padding:8px 0;white-space:nowrap;transition:color .35s`)} data-hover="color:#E90063">Residential</a>
-      <a href="#types" onClick={onNavClick} style={css(`font-size:11.5px;letter-spacing:.13em;text-transform:uppercase;font-weight:500;color:var(--ink);padding:8px 0;white-space:nowrap;transition:color .35s`)} data-hover="color:#E90063">Commercial</a>
+      <a href="#commercial" onClick={onNavClick} style={css(`font-size:11.5px;letter-spacing:.13em;text-transform:uppercase;font-weight:500;color:var(--ink);padding:8px 0;white-space:nowrap;transition:color .35s`)} data-hover="color:#E90063">Commercial</a>
       <a href="#standard" onClick={onNavClick} style={css(`font-size:11.5px;letter-spacing:.13em;text-transform:uppercase;font-weight:500;color:var(--ink);padding:8px 0;white-space:nowrap;transition:color .35s`)} data-hover="color:#E90063">Why Us</a>
     </nav>
     <div style={css(`display:flex;align-items:center;justify-content:flex-end;gap:12px`)}>
@@ -235,7 +287,7 @@ export default function App({ accentPink = '#E90063', loopSpeed = 64, showLoader
       <a href="#services" onClick={onNavClick} style={css(`display:flex;align-items:baseline;gap:16px;padding:10px 0;border-bottom:1px solid rgba(248,246,240,.12);color:var(--ivory)`)}><span style={css(`font-size:10px;letter-spacing:.2em;color:var(--pink-lt)`)}>01</span><span style={css(`font-family:'Instrument Serif',serif;font-size:clamp(34px,10vw,58px);line-height:1.05`)}>Services</span></a>
       <a href="#holiday" onClick={onNavClick} style={css(`display:flex;align-items:baseline;gap:16px;padding:10px 0;border-bottom:1px solid rgba(248,246,240,.12);color:var(--ivory)`)}><span style={css(`font-size:10px;letter-spacing:.2em;color:var(--pink-lt)`)}>02</span><span style={css(`font-family:'Instrument Serif',serif;font-size:clamp(34px,10vw,58px);line-height:1.05`)}>Holiday Lets</span></a>
       <a href="#directory" onClick={onNavClick} style={css(`display:flex;align-items:baseline;gap:16px;padding:10px 0;border-bottom:1px solid rgba(248,246,240,.12);color:var(--ivory)`)}><span style={css(`font-size:10px;letter-spacing:.2em;color:var(--pink-lt)`)}>03</span><span style={css(`font-family:'Instrument Serif',serif;font-size:clamp(34px,10vw,58px);line-height:1.05`)}>Residential</span></a>
-      <a href="#types" onClick={onNavClick} style={css(`display:flex;align-items:baseline;gap:16px;padding:10px 0;border-bottom:1px solid rgba(248,246,240,.12);color:var(--ivory)`)}><span style={css(`font-size:10px;letter-spacing:.2em;color:var(--pink-lt)`)}>04</span><span style={css(`font-family:'Instrument Serif',serif;font-size:clamp(34px,10vw,58px);line-height:1.05`)}>Commercial</span></a>
+      <a href="#commercial" onClick={onNavClick} style={css(`display:flex;align-items:baseline;gap:16px;padding:10px 0;border-bottom:1px solid rgba(248,246,240,.12);color:var(--ivory)`)}><span style={css(`font-size:10px;letter-spacing:.2em;color:var(--pink-lt)`)}>04</span><span style={css(`font-family:'Instrument Serif',serif;font-size:clamp(34px,10vw,58px);line-height:1.05`)}>Commercial</span></a>
       <a href="#contact" onClick={onNavClick} style={css(`display:flex;align-items:baseline;gap:16px;padding:10px 0;border-bottom:1px solid rgba(248,246,240,.12);color:var(--ivory)`)}><span style={css(`font-size:10px;letter-spacing:.2em;color:var(--pink-lt)`)}>05</span><span style={css(`font-family:'Instrument Serif',serif;font-size:clamp(34px,10vw,58px);line-height:1.05`)}>Contact</span></a>
     </nav>
     <div style={css(`display:flex;flex-direction:column;gap:20px`)}>
@@ -247,9 +299,18 @@ export default function App({ accentPink = '#E90063', loopSpeed = 64, showLoader
   <main id="main">
   {/* HERO */}
   <section id="top" style={css(`position:relative;min-height:100svh;display:flex;flex-direction:column;background:var(--paper);overflow:hidden`)}>
-    <img data-r="only-sm" src="assets/brand/logo-flock.jpeg" alt="Cleaning Stars — we make it sparkle" style={css(`width:100%;aspect-ratio:1562/1007;height:auto;object-fit:cover;display:block`)} />
+    <div data-r="only-sm" style={css(`background:#fff;padding-top:clamp(72px,11vw,100px)`)}>
+      <picture>
+        <source media="(max-width:1020px)" type="image/webp" srcSet="assets/hero/hero-mobile-720.webp 720w, assets/hero/hero-mobile-1200.webp 1200w" sizes="(max-width:760px) 100vw, 760px" />
+        <img src={PX} alt="Cleaning Stars — we make it sparkle" width="1315" height="908" decoding="async" style={css(`width:100%;max-width:760px;height:auto;display:block;margin:0 auto`)} />
+      </picture>
+      <div aria-hidden="true" style={css(`height:clamp(28px,7vw,56px);background:linear-gradient(180deg,#fff,var(--paper))`)}></div>
+    </div>
     <div data-r="hide-sm" style={css(`position:absolute;inset:0`)}>
-    <img ref={heroBgRef} data-r="hide-sm" src="assets/hero/hero-desktop.png" alt="Cleaning Stars — we make it sparkle" style={css(`position:absolute;inset:0;width:100%;height:100%;object-fit:cover;object-position:right center;display:block;will-change:transform`)} />
+    <picture>
+      <source media="(min-width:1021px)" type="image/webp" srcSet="assets/hero/hero-desktop-1100.webp 1100w, assets/hero/hero-desktop-1672.webp 1672w" sizes="100vw" />
+      <img ref={heroBgRef} data-r="hide-sm" src={PX} alt="Cleaning Stars — we make it sparkle" width="1672" height="941" decoding="async" style={css(`position:absolute;inset:0;width:100%;height:100%;object-fit:cover;object-position:right center;display:block;will-change:transform`)} />
+    </picture>
     <div data-r="hide-sm" aria-hidden="true" style={css(`position:absolute;inset:0;background:linear-gradient(90deg,rgba(248,246,240,.82) 0%,rgba(248,246,240,.55) 28%,rgba(248,246,240,0) 50%);pointer-events:none`)}></div>
     </div>
     <div style={css(`position:relative;flex:1;display:flex;align-items:flex-end;width:100%;max-width:1560px;margin:0 auto;padding:clamp(40px,10vh,190px) clamp(20px,5vw,72px) clamp(40px,6vh,72px)`)} data-r="hero-outer">
@@ -343,7 +404,7 @@ export default function App({ accentPink = '#E90063', loopSpeed = 64, showLoader
     <div style={css(`max-width:1440px;margin:0 auto`)}>
       <div style={css(`display:flex;flex-wrap:wrap;justify-content:space-between;align-items:flex-end;gap:20px;border-bottom:1px solid rgba(17,21,18,.12);padding-bottom:26px`)}>
         <h2 data-reveal="1" style={css(`font-family:'Instrument Serif',serif;font-weight:400;font-size:clamp(2.2rem,5vw,4.6rem);line-height:.98;letter-spacing:-.02em;margin:0;opacity:0;transform:translateY(20px);transition:all .9s cubic-bezier(.16,1,.3,1)`)}>Signature services</h2>
-        <span style={css(`font-size:11px;letter-spacing:.26em;text-transform:uppercase;color:var(--muted)`)}>Six ways we prepare a space</span>
+        <span style={css(`font-size:11px;letter-spacing:.26em;text-transform:uppercase;color:var(--muted)`)}>Four ways we prepare a space</span>
       </div>
 
       <div data-r="svcgrid" style={css(`display:grid;grid-template-columns:minmax(0,1fr) minmax(0,1.02fr);gap:clamp(24px,5vw,80px);margin-top:clamp(30px,4vw,60px);align-items:start`)}>
@@ -351,87 +412,61 @@ export default function App({ accentPink = '#E90063', loopSpeed = 64, showLoader
           <div data-svc-panel="0" style={css(`min-height:min(74vh,640px);display:flex;flex-direction:column;justify-content:center;padding:40px 0;border-bottom:1px solid rgba(17,21,18,.08)`)}>
             <div style={css(`display:flex;align-items:center;gap:14px`)}><span style={css(`font-size:11px;letter-spacing:.24em;color:var(--pink);font-weight:600`)}>01</span><span data-svc-line="0" style={css(`height:1px;width:0;background:var(--pink);transition:width .8s cubic-bezier(.16,1,.3,1)`)}></span></div>
             <h3 style={css(`font-family:'Instrument Serif',serif;font-weight:400;font-size:clamp(2rem,3.8vw,3.6rem);line-height:1;letter-spacing:-.02em;margin:18px 0 0`)}>Airbnb turnovers</h3>
-            <img data-r="only-sm" src="assets/gallery/g1.jpeg" alt="Bedroom prepared for the next guest arrival" loading="lazy" style={css(`width:100%;height:56vw;max-height:420px;object-fit:cover;border-radius:4px;margin:22px 0 0`)} />
+            <img data-r="only-sm" {...gimg('g1', SZ_PANEL_SM)} alt="Bedroom prepared for the next guest arrival" loading="lazy" style={css(`width:100%;height:56vw;max-height:420px;object-fit:cover;border-radius:4px;margin:22px 0 0`)} />
             <p style={css(`max-width:44ch;margin:20px 0 0;font-size:16px;line-height:1.66;color:#3A423C`)}>Complete between-guest cleaning to ensure your property is fresh, spotless and ready for the next check-in.</p>
             <p style={css(`max-width:44ch;margin:14px 0 0;font-size:15px;line-height:1.66;color:var(--muted)`)}>We take care of bedrooms, bathrooms, kitchens, living areas, linen changes and the finishing touches that create a strong first impression for every guest.</p>
           </div>
           <div data-svc-panel="1" style={css(`min-height:min(74vh,640px);display:flex;flex-direction:column;justify-content:center;padding:40px 0;border-bottom:1px solid rgba(17,21,18,.08)`)}>
             <div style={css(`display:flex;align-items:center;gap:14px`)}><span style={css(`font-size:11px;letter-spacing:.24em;color:var(--pink);font-weight:600`)}>02</span><span data-svc-line="1" style={css(`height:1px;width:0;background:var(--pink);transition:width .8s cubic-bezier(.16,1,.3,1)`)}></span></div>
             <h3 style={css(`font-family:'Instrument Serif',serif;font-weight:400;font-size:clamp(2rem,3.8vw,3.6rem);line-height:1;letter-spacing:-.02em;margin:18px 0 0`)}>Airbnb setups &amp; styling</h3>
-            <img data-r="only-sm" src="assets/gallery/g6.jpeg" alt="Styled bedroom with layered textiles and artwork" loading="lazy" style={css(`width:100%;height:56vw;max-height:420px;object-fit:cover;border-radius:4px;margin:22px 0 0`)} />
+            <img data-r="only-sm" {...gimg('g6', SZ_PANEL_SM)} alt="Styled bedroom with layered textiles and artwork" loading="lazy" style={css(`width:100%;height:56vw;max-height:420px;object-fit:cover;border-radius:4px;margin:22px 0 0`)} />
             <p style={css(`max-width:44ch;margin:20px 0 0;font-size:16px;line-height:1.66;color:#3A423C`)}>We help transform a property into an inviting, guest-ready space from the very beginning.</p>
             <p style={css(`max-width:44ch;margin:14px 0 0;font-size:15px;line-height:1.66;color:var(--muted)`)}>As well as cleaning and preparing the property, we can help with décor, styling and presentation tailored to its location, character and target guests — from colour schemes and furnishings to amenities and final presentation.</p>
           </div>
           <div data-svc-panel="2" style={css(`min-height:min(74vh,640px);display:flex;flex-direction:column;justify-content:center;padding:40px 0;border-bottom:1px solid rgba(17,21,18,.08)`)}>
             <div style={css(`display:flex;align-items:center;gap:14px`)}><span style={css(`font-size:11px;letter-spacing:.24em;color:var(--pink);font-weight:600`)}>03</span><span data-svc-line="2" style={css(`height:1px;width:0;background:var(--pink);transition:width .8s cubic-bezier(.16,1,.3,1)`)}></span></div>
             <h3 style={css(`font-family:'Instrument Serif',serif;font-weight:400;font-size:clamp(2rem,3.8vw,3.6rem);line-height:1;letter-spacing:-.02em;margin:18px 0 0`)}>Residential cleaning</h3>
-            <img data-r="only-sm" src="assets/gallery/g4.jpeg" alt="Calm bedroom in a London home" loading="lazy" style={css(`width:100%;height:56vw;max-height:420px;object-fit:cover;border-radius:4px;margin:22px 0 0`)} />
+            <img data-r="only-sm" {...gimg('g4', SZ_PANEL_SM)} alt="Calm bedroom in a London home" loading="lazy" style={css(`width:100%;height:56vw;max-height:420px;object-fit:cover;border-radius:4px;margin:22px 0 0`)} />
             <p style={css(`max-width:44ch;margin:20px 0 0;font-size:16px;line-height:1.66;color:#3A423C`)}>Regular or one-off cleaning for homes and apartments, tailored to individual requirements.</p>
             <p style={css(`max-width:44ch;margin:14px 0 0;font-size:15px;line-height:1.66;color:var(--muted)`)}>From everyday maintenance to more detailed cleaning, the goal is to keep the home fresh, comfortable and beautifully maintained.</p>
           </div>
-          <div data-svc-panel="3" style={css(`min-height:min(74vh,640px);display:flex;flex-direction:column;justify-content:center;padding:40px 0;border-bottom:1px solid rgba(17,21,18,.08)`)}>
+          <div data-svc-panel="3" style={css(`min-height:min(74vh,640px);display:flex;flex-direction:column;justify-content:center;padding:40px 0`)}>
             <div style={css(`display:flex;align-items:center;gap:14px`)}><span style={css(`font-size:11px;letter-spacing:.24em;color:var(--pink);font-weight:600`)}>04</span><span data-svc-line="3" style={css(`height:1px;width:0;background:var(--pink);transition:width .8s cubic-bezier(.16,1,.3,1)`)}></span></div>
-            <h3 style={css(`font-family:'Instrument Serif',serif;font-weight:400;font-size:clamp(2rem,3.8vw,3.6rem);line-height:1;letter-spacing:-.02em;margin:18px 0 0`)}>Commercial cleaning</h3>
-            <p style={css(`max-width:44ch;margin:20px 0 0;font-size:16px;line-height:1.66;color:#3A423C`)}>Professional cleaning for offices, workplaces, shops and other commercial spaces.</p>
-            <p style={css(`max-width:44ch;margin:14px 0 0;font-size:15px;line-height:1.66;color:var(--muted)`)}>Designed to help maintain clean, hygienic and welcoming environments for employees, customers and visitors.</p>
-          </div>
-          <div data-svc-panel="4" style={css(`min-height:min(74vh,640px);display:flex;flex-direction:column;justify-content:center;padding:40px 0;border-bottom:1px solid rgba(17,21,18,.08)`)}>
-            <div style={css(`display:flex;align-items:center;gap:14px`)}><span style={css(`font-size:11px;letter-spacing:.24em;color:var(--pink);font-weight:600`)}>05</span><span data-svc-line="4" style={css(`height:1px;width:0;background:var(--pink);transition:width .8s cubic-bezier(.16,1,.3,1)`)}></span></div>
             <h3 style={css(`font-family:'Instrument Serif',serif;font-weight:400;font-size:clamp(2rem,3.8vw,3.6rem);line-height:1;letter-spacing:-.02em;margin:18px 0 0`)}>Hotel cleaning</h3>
-            <img data-r="only-sm" src="assets/gallery/g1.jpeg" alt="Guest room prepared with rolled towels on the bed" loading="lazy" style={css(`width:100%;height:56vw;max-height:420px;object-fit:cover;border-radius:4px;margin:22px 0 0`)} />
+            <img data-r="only-sm" {...gimg('g1', SZ_PANEL_SM)} alt="Guest room prepared with rolled towels on the bed" loading="lazy" style={css(`width:100%;height:56vw;max-height:420px;object-fit:cover;border-radius:4px;margin:22px 0 0`)} />
             <p style={css(`max-width:44ch;margin:20px 0 0;font-size:16px;line-height:1.66;color:#3A423C`)}>Reliable cleaning and room preparation for hotels and short-stay accommodation.</p>
             <p style={css(`max-width:44ch;margin:14px 0 0;font-size:15px;line-height:1.66;color:var(--muted)`)}>Includes guest rooms, bathrooms and communal areas, with a focus on consistency and presentation.</p>
-          </div>
-          <div data-svc-panel="5" style={css(`min-height:min(74vh,640px);display:flex;flex-direction:column;justify-content:center;padding:40px 0`)}>
-            <div style={css(`display:flex;align-items:center;gap:14px`)}><span style={css(`font-size:11px;letter-spacing:.24em;color:var(--pink);font-weight:600`)}>06</span><span data-svc-line="5" style={css(`height:1px;width:0;background:var(--pink);transition:width .8s cubic-bezier(.16,1,.3,1)`)}></span></div>
-            <h3 style={css(`font-family:'Instrument Serif',serif;font-weight:400;font-size:clamp(2rem,3.8vw,3.6rem);line-height:1;letter-spacing:-.02em;margin:18px 0 0`)}>After builders cleaning</h3>
-            <p style={css(`max-width:44ch;margin:20px 0 0;font-size:16px;line-height:1.66;color:#3A423C`)}>Building and renovation work can leave dust, debris and fine particles throughout a property.</p>
-            <p style={css(`max-width:44ch;margin:14px 0 0;font-size:15px;line-height:1.66;color:var(--muted)`)}>Detailed after-builders cleaning removes construction residue and prepares the space for use.</p>
           </div>
         </div>
 
         <div data-r="hide-sm" style={css(`position:sticky;top:14vh;height:72vh;overflow:hidden;background:var(--forest-deep);border-radius:2px`)}>
           <div data-svc-media="0" style={css(`position:absolute;inset:0;opacity:1;transition:opacity .9s cubic-bezier(.16,1,.3,1)`)}>
-            <img data-svc-main="1" src="assets/gallery/g1.jpeg" alt="Bedroom prepared for the next guest arrival" loading="lazy" style={css(`width:100%;height:100%;object-fit:cover;display:block;transform:scale(1.02);transition:transform 6s cubic-bezier(.22,.61,.36,1)`)} />
+            <img data-svc-main="1" {...gimg('g1', SZ_PANEL)} alt="Bedroom prepared for the next guest arrival" loading="lazy" style={css(`width:100%;height:100%;object-fit:cover;display:block;transform:scale(1.02);transition:transform 6s cubic-bezier(.22,.61,.36,1)`)} />
             <figure style={css(`position:absolute;left:22px;bottom:76px;width:31%;margin:0;aspect-ratio:3/4;overflow:hidden;box-shadow:0 18px 44px rgba(6,31,18,.34);border:5px solid var(--ivory)`)}>
-              <img src="assets/gallery/g2.jpeg" alt="Fresh linen and folded towels set out for arrival" loading="lazy" style={css(`width:100%;height:100%;object-fit:cover;display:block`)} />
+              <img {...gimg('g2', SZ_INSET)} alt="Fresh linen and folded towels set out for arrival" loading="lazy" style={css(`width:100%;height:100%;object-fit:cover;display:block`)} />
             </figure>
           </div>
           <div data-svc-media="1" style={css(`position:absolute;inset:0;opacity:0;transition:opacity .9s cubic-bezier(.16,1,.3,1)`)}>
-            <img data-svc-main="1" src="assets/gallery/g6.jpeg" alt="Styled bedroom with velvet headboard and layered textiles" loading="lazy" style={css(`width:100%;height:100%;object-fit:cover;display:block;transform:scale(1.02);transition:transform 6s cubic-bezier(.22,.61,.36,1)`)} />
+            <img data-svc-main="1" {...gimg('g6', SZ_PANEL)} alt="Styled bedroom with velvet headboard and layered textiles" loading="lazy" style={css(`width:100%;height:100%;object-fit:cover;display:block;transform:scale(1.02);transition:transform 6s cubic-bezier(.22,.61,.36,1)`)} />
             <figure style={css(`position:absolute;left:22px;bottom:76px;width:31%;margin:0;aspect-ratio:3/4;overflow:hidden;box-shadow:0 18px 44px rgba(6,31,18,.34);border:5px solid var(--ivory)`)}>
-              <img src="assets/gallery/g7.jpeg" alt="Bedside styling with lamps, flowers and objects" loading="lazy" style={css(`width:100%;height:100%;object-fit:cover;display:block`)} />
+              <img {...gimg('g7', SZ_INSET)} alt="Bedside styling with lamps, flowers and objects" loading="lazy" style={css(`width:100%;height:100%;object-fit:cover;display:block`)} />
             </figure>
           </div>
           <div data-svc-media="2" style={css(`position:absolute;inset:0;opacity:0;transition:opacity .9s cubic-bezier(.16,1,.3,1)`)}>
-            <img data-svc-main="1" src="assets/gallery/g4.jpeg" alt="Calm bedroom in a London home" loading="lazy" style={css(`width:100%;height:100%;object-fit:cover;display:block;transform:scale(1.02);transition:transform 6s cubic-bezier(.22,.61,.36,1)`)} />
+            <img data-svc-main="1" {...gimg('g4', SZ_PANEL)} alt="Calm bedroom in a London home" loading="lazy" style={css(`width:100%;height:100%;object-fit:cover;display:block;transform:scale(1.02);transition:transform 6s cubic-bezier(.22,.61,.36,1)`)} />
             <figure style={css(`position:absolute;left:22px;bottom:76px;width:31%;margin:0;aspect-ratio:3/4;overflow:hidden;box-shadow:0 18px 44px rgba(6,31,18,.34);border:5px solid var(--ivory)`)}>
-              <img src="assets/gallery/g5.jpeg" alt="Bedroom corner with fresh bedding and bedside plant" loading="lazy" style={css(`width:100%;height:100%;object-fit:cover;display:block`)} />
+              <img {...gimg('g5', SZ_INSET)} alt="Bedroom corner with fresh bedding and bedside plant" loading="lazy" style={css(`width:100%;height:100%;object-fit:cover;display:block`)} />
             </figure>
           </div>
-          <div data-svc-media="3" style={css(`position:absolute;inset:0;opacity:0;transition:opacity .9s cubic-bezier(.16,1,.3,1);background:var(--leaf);display:flex;flex-direction:column;justify-content:space-between;padding:clamp(24px,3vw,44px);color:var(--ivory)`)}>
-            <span style={css(`font-size:11px;letter-spacing:.26em;text-transform:uppercase;color:rgba(248,246,240,.5)`)}>Commercial</span>
-            <div>
-              <div style={css(`font-family:'Instrument Serif',serif;font-size:clamp(2rem,3.4vw,3.4rem);line-height:1.02;letter-spacing:-.02em`)}>Offices, workplaces,<br />shops and<br /><em style={css(`color:var(--pink-lt)`)}>everyday spaces.</em></div>
-              <div style={css(`margin-top:22px;height:1px;width:110px;background:rgba(248,246,240,.3)`)}></div>
-            </div>
-          </div>
-          <div data-svc-media="4" style={css(`position:absolute;inset:0;opacity:0;transition:opacity .9s cubic-bezier(.16,1,.3,1)`)}>
-            <img data-svc-main="1" src="assets/gallery/g1.jpeg" alt="Guest room prepared with rolled towels on the bed" loading="lazy" style={css(`width:100%;height:100%;object-fit:cover;display:block;transform:scale(1.02);transition:transform 6s cubic-bezier(.22,.61,.36,1)`)} />
+          <div data-svc-media="3" style={css(`position:absolute;inset:0;opacity:0;transition:opacity .9s cubic-bezier(.16,1,.3,1)`)}>
+            <img data-svc-main="1" {...gimg('g1', SZ_PANEL)} alt="Guest room prepared with rolled towels on the bed" loading="lazy" style={css(`width:100%;height:100%;object-fit:cover;display:block;transform:scale(1.02);transition:transform 6s cubic-bezier(.22,.61,.36,1)`)} />
             <figure style={css(`position:absolute;left:22px;bottom:76px;width:31%;margin:0;aspect-ratio:3/4;overflow:hidden;box-shadow:0 18px 44px rgba(6,31,18,.34);border:5px solid var(--ivory)`)}>
-              <img src="assets/gallery/g8.jpeg" alt="Room made up with towels and layered throws" loading="lazy" style={css(`width:100%;height:100%;object-fit:cover;display:block`)} />
+              <img {...gimg('g8', SZ_INSET)} alt="Room made up with towels and layered throws" loading="lazy" style={css(`width:100%;height:100%;object-fit:cover;display:block`)} />
             </figure>
-          </div>
-          <div data-svc-media="5" style={css(`position:absolute;inset:0;opacity:0;transition:opacity .9s cubic-bezier(.16,1,.3,1);background:var(--leaf-deep);display:flex;flex-direction:column;justify-content:space-between;padding:clamp(24px,3vw,44px);color:var(--ivory)`)}>
-            <span style={css(`font-size:11px;letter-spacing:.26em;text-transform:uppercase;color:rgba(248,246,240,.5)`)}>After builders</span>
-            <div>
-              <div style={css(`font-family:'Instrument Serif',serif;font-size:clamp(2rem,3.4vw,3.4rem);line-height:1.02;letter-spacing:-.02em`)}>Dust out.<br /><em style={css(`color:var(--pink-lt)`)}>Finished space in.</em></div>
-              <div style={css(`margin-top:22px;height:1px;width:110px;background:rgba(248,246,240,.3)`)}></div>
-            </div>
           </div>
           <div style={css(`position:absolute;left:0;right:0;bottom:0;display:flex;justify-content:space-between;align-items:flex-end;padding:20px 22px;color:#fff;font-size:11px;letter-spacing:.24em;text-transform:uppercase;background:linear-gradient(0deg,rgba(6,31,18,.55),transparent);pointer-events:none`)}>
             <span ref={svcLabelRef}>Airbnb turnovers</span>
-            <span><span ref={svcNumRef}>01</span> / 06</span>
+            <span><span ref={svcNumRef}>01</span> / 04</span>
           </div>
         </div>
       </div>
@@ -448,8 +483,8 @@ export default function App({ accentPink = '#E90063', loopSpeed = 64, showLoader
     <div data-cursor="Drag" style={css(`margin-top:clamp(34px,4vw,60px);overflow:hidden`)}>
       <div data-r="loop" ref={loopARef} style={css(`display:flex;gap:16px;width:max-content;height:clamp(280px,34vw,460px);animation:csLoopL 64s linear infinite;will-change:transform`)}>
         {loopA.map((item, $index) => (
-          <figure key={$index} style={css(`flex:0 0 auto;height:100%;margin:0;position:relative;border-radius:3px;overflow:hidden;background:#ddd`)}>
-            <img src={item.src} alt={item.alt} loading="lazy" style={css(`height:100%;width:auto;display:block;object-fit:cover`)} />
+          <figure key={$index} style={{ ...css(`flex:0 0 auto;height:100%;margin:0;position:relative;border-radius:3px;overflow:hidden;background:#E2DCCF`), aspectRatio: GAL[item.id][0] + ' / ' + GAL[item.id][1] }}>
+            <img src={PX} data-src={'assets/gallery/' + item.id + '-480.webp'} data-srcset={galSet(item.id)} sizes={GAL[item.id][0] > GAL[item.id][1] ? SZ_LOOP_WIDE : SZ_LOOP} width={GAL[item.id][0]} height={GAL[item.id][1]} alt={$index < gal.length ? item.alt : ''} decoding="async" draggable={false} style={css(`width:100%;height:100%;display:block;object-fit:cover;opacity:0;transition:opacity .6s ease`)} />
             <figcaption style={css(`position:absolute;left:12px;bottom:12px;color:#fff;font-size:10px;letter-spacing:.22em;text-transform:uppercase;text-shadow:0 2px 12px rgba(0,0,0,.5)`)}>{item.tag}<br /><span style={css(`opacity:.75`)}>{item.sub}</span></figcaption>
           </figure>
         ))}
@@ -458,8 +493,8 @@ export default function App({ accentPink = '#E90063', loopSpeed = 64, showLoader
     <div data-cursor="Drag" style={css(`margin-top:16px;overflow:hidden`)}>
       <div data-r="loop" ref={loopBRef} style={css(`display:flex;gap:16px;width:max-content;height:clamp(180px,22vw,300px);animation:csLoopR 78s linear infinite;will-change:transform`)}>
         {loopB.map((item, $index) => (
-          <figure key={$index} style={css(`flex:0 0 auto;height:100%;margin:0;position:relative;border-radius:3px;overflow:hidden;background:#ddd`)}>
-            <img src={item.src} alt={item.alt} loading="lazy" style={css(`height:100%;width:auto;display:block;object-fit:cover`)} />
+          <figure key={$index} style={{ ...css(`flex:0 0 auto;height:100%;margin:0;position:relative;border-radius:3px;overflow:hidden;background:#E2DCCF`), aspectRatio: GAL[item.id][0] + ' / ' + GAL[item.id][1] }}>
+            <img src={PX} data-src={'assets/gallery/' + item.id + '-480.webp'} data-srcset={galSet(item.id)} sizes={GAL[item.id][0] > GAL[item.id][1] ? SZ_LOOP_WIDE : SZ_LOOP} width={GAL[item.id][0]} height={GAL[item.id][1]} alt={$index < gal.length ? item.alt : ''} decoding="async" draggable={false} style={css(`width:100%;height:100%;display:block;object-fit:cover;opacity:0;transition:opacity .6s ease`)} />
           </figure>
         ))}
       </div>
@@ -501,17 +536,17 @@ export default function App({ accentPink = '#E90063', loopSpeed = 64, showLoader
         <h2 data-reveal="1" style={css(`font-family:'Instrument Serif',serif;font-weight:400;font-size:clamp(2.4rem,5.6vw,5.2rem);line-height:.95;letter-spacing:-.025em;margin:24px 0 0;opacity:0;transform:translateY(24px);transition:all .95s cubic-bezier(.16,1,.3,1)`)}>Not just clean.<br /><em style={css(`font-style:italic;color:var(--pink)`)}>Ready to be chosen.</em></h2>
         <p style={css(`max-width:46ch;margin:26px 0 0;font-size:16px;line-height:1.68;color:#3A423C`)}>The way a holiday property feels can influence the entire guest experience. Cleaning Stars can help hosts prepare and style spaces around the type of stay they want to create — from cosy family escapes to modern city apartments and romantic short stays.</p>
         <div style={css(`display:flex;flex-wrap:wrap;gap:10px;margin-top:34px`)}>
-          <button type="button" data-tag="assets/gallery/g6.jpeg" onClick={pickTag} style={css(`background:transparent;border:1px solid rgba(17,21,18,.18);color:var(--ink);padding:13px 20px;border-radius:999px;font-size:11px;letter-spacing:.18em;text-transform:uppercase;cursor:pointer;min-height:44px;transition:all .35s`)} data-hover="border-color:#E90063;color:#E90063">Colour</button>
-          <button type="button" data-tag="assets/gallery/g4.jpeg" onClick={pickTag} style={css(`background:transparent;border:1px solid rgba(17,21,18,.18);color:var(--ink);padding:13px 20px;border-radius:999px;font-size:11px;letter-spacing:.18em;text-transform:uppercase;cursor:pointer;min-height:44px;transition:all .35s`)} data-hover="border-color:#E90063;color:#E90063">Textiles</button>
-          <button type="button" data-tag="assets/gallery/g2.jpeg" onClick={pickTag} style={css(`background:transparent;border:1px solid rgba(17,21,18,.18);color:var(--ink);padding:13px 20px;border-radius:999px;font-size:11px;letter-spacing:.18em;text-transform:uppercase;cursor:pointer;min-height:44px;transition:all .35s`)} data-hover="border-color:#E90063;color:#E90063">Amenities</button>
-          <button type="button" data-tag="assets/gallery/g7.jpeg" onClick={pickTag} style={css(`background:transparent;border:1px solid rgba(17,21,18,.18);color:var(--ink);padding:13px 20px;border-radius:999px;font-size:11px;letter-spacing:.18em;text-transform:uppercase;cursor:pointer;min-height:44px;transition:all .35s`)} data-hover="border-color:#E90063;color:#E90063">Layout</button>
-          <button type="button" data-tag="assets/gallery/g5.jpeg" onClick={pickTag} style={css(`background:transparent;border:1px solid rgba(17,21,18,.18);color:var(--ink);padding:13px 20px;border-radius:999px;font-size:11px;letter-spacing:.18em;text-transform:uppercase;cursor:pointer;min-height:44px;transition:all .35s`)} data-hover="border-color:#E90063;color:#E90063">Details</button>
-          <button type="button" data-tag="assets/gallery/g1.jpeg" onClick={pickTag} style={css(`background:transparent;border:1px solid rgba(17,21,18,.18);color:var(--ink);padding:13px 20px;border-radius:999px;font-size:11px;letter-spacing:.18em;text-transform:uppercase;cursor:pointer;min-height:44px;transition:all .35s`)} data-hover="border-color:#E90063;color:#E90063">Presentation</button>
+          <button type="button" data-tag="g6" onClick={pickTag} style={css(`background:transparent;border:1px solid rgba(17,21,18,.18);color:var(--ink);padding:13px 20px;border-radius:999px;font-size:11px;letter-spacing:.18em;text-transform:uppercase;cursor:pointer;min-height:44px;transition:all .35s`)} data-hover="border-color:#E90063;color:#E90063">Colour</button>
+          <button type="button" data-tag="g4" onClick={pickTag} style={css(`background:transparent;border:1px solid rgba(17,21,18,.18);color:var(--ink);padding:13px 20px;border-radius:999px;font-size:11px;letter-spacing:.18em;text-transform:uppercase;cursor:pointer;min-height:44px;transition:all .35s`)} data-hover="border-color:#E90063;color:#E90063">Textiles</button>
+          <button type="button" data-tag="g2" onClick={pickTag} style={css(`background:transparent;border:1px solid rgba(17,21,18,.18);color:var(--ink);padding:13px 20px;border-radius:999px;font-size:11px;letter-spacing:.18em;text-transform:uppercase;cursor:pointer;min-height:44px;transition:all .35s`)} data-hover="border-color:#E90063;color:#E90063">Amenities</button>
+          <button type="button" data-tag="g7" onClick={pickTag} style={css(`background:transparent;border:1px solid rgba(17,21,18,.18);color:var(--ink);padding:13px 20px;border-radius:999px;font-size:11px;letter-spacing:.18em;text-transform:uppercase;cursor:pointer;min-height:44px;transition:all .35s`)} data-hover="border-color:#E90063;color:#E90063">Layout</button>
+          <button type="button" data-tag="g5" onClick={pickTag} style={css(`background:transparent;border:1px solid rgba(17,21,18,.18);color:var(--ink);padding:13px 20px;border-radius:999px;font-size:11px;letter-spacing:.18em;text-transform:uppercase;cursor:pointer;min-height:44px;transition:all .35s`)} data-hover="border-color:#E90063;color:#E90063">Details</button>
+          <button type="button" data-tag="g1" onClick={pickTag} style={css(`background:transparent;border:1px solid rgba(17,21,18,.18);color:var(--ink);padding:13px 20px;border-radius:999px;font-size:11px;letter-spacing:.18em;text-transform:uppercase;cursor:pointer;min-height:44px;transition:all .35s`)} data-hover="border-color:#E90063;color:#E90063">Presentation</button>
         </div>
         <p style={css(`margin:22px 0 0;font-size:12.5px;line-height:1.6;color:var(--muted);max-width:44ch`)}>Setup, styling and property presentation support — not an interior-design accreditation.</p>
       </div>
       <div style={css(`position:relative;aspect-ratio:4/5;overflow:hidden;background:var(--cream);border-radius:3px`)}>
-        <img ref={styleImgRef} src="assets/gallery/g6.jpeg" alt="Styled short-stay bedroom" loading="lazy" style={css(`width:100%;height:100%;object-fit:cover;display:block;transition:opacity .5s ease,transform 1.2s cubic-bezier(.16,1,.3,1)`)} />
+        <img ref={styleImgRef} {...gimg('g6', SZ_STYLE)} alt="Styled short-stay bedroom" loading="lazy" style={css(`width:100%;height:100%;object-fit:cover;display:block;transition:opacity .5s ease,transform 1.2s cubic-bezier(.16,1,.3,1)`)} />
       </div>
     </div>
   </section>
@@ -522,28 +557,16 @@ export default function App({ accentPink = '#E90063', loopSpeed = 64, showLoader
       <h2 data-reveal="1" style={css(`font-family:'Instrument Serif',serif;font-weight:400;font-size:clamp(2.2rem,5vw,4.6rem);line-height:.98;letter-spacing:-.02em;margin:0 0 clamp(28px,4vw,52px);opacity:0;transform:translateY(20px);transition:all .9s cubic-bezier(.16,1,.3,1)`)}>Spaces we prepare</h2>
       <div style={css(`display:grid;grid-template-columns:repeat(auto-fit,minmax(280px,1fr));gap:14px`)}>
         <a href="#contact" onClick={onNavClick} data-cursor="View" style={css(`position:relative;display:block;aspect-ratio:4/5;overflow:hidden;background:var(--forest-deep);color:#fff`)}>
-          <img src="assets/gallery/g1.jpeg" alt="Holiday let bedroom" loading="lazy" style={css(`width:100%;height:100%;object-fit:cover;transition:transform 1.1s cubic-bezier(.16,1,.3,1);opacity:.86`)} data-hover="transform:scale(1.04)" />
+          <img {...gimg('g1', SZ_CARD)} alt="Holiday let bedroom" loading="lazy" style={css(`width:100%;height:100%;object-fit:cover;transition:transform 1.1s cubic-bezier(.16,1,.3,1);opacity:.86`)} data-hover="transform:scale(1.04)" />
           <span style={css(`position:absolute;left:20px;bottom:20px;right:20px;display:flex;justify-content:space-between;align-items:flex-end;font-family:'Instrument Serif',serif;font-size:clamp(1.5rem,2.4vw,2.3rem);line-height:1;text-shadow:0 2px 20px rgba(0,0,0,.4)`)}>Holiday lets <span style={css(`font-family:'Manrope',sans-serif;font-size:14px`)}>↗</span></span>
         </a>
         <a href="#contact" onClick={onNavClick} data-cursor="View" style={css(`position:relative;display:block;aspect-ratio:4/5;overflow:hidden;background:var(--forest-deep);color:#fff`)}>
-          <img src="assets/gallery/g4.jpeg" alt="Home bedroom" loading="lazy" style={css(`width:100%;height:100%;object-fit:cover;transition:transform 1.1s cubic-bezier(.16,1,.3,1);opacity:.86`)} data-hover="transform:scale(1.04)" />
+          <img {...gimg('g4', SZ_CARD)} alt="Home bedroom" loading="lazy" style={css(`width:100%;height:100%;object-fit:cover;transition:transform 1.1s cubic-bezier(.16,1,.3,1);opacity:.86`)} data-hover="transform:scale(1.04)" />
           <span style={css(`position:absolute;left:20px;bottom:20px;right:20px;display:flex;justify-content:space-between;align-items:flex-end;font-family:'Instrument Serif',serif;font-size:clamp(1.5rem,2.4vw,2.3rem);line-height:1;text-shadow:0 2px 20px rgba(0,0,0,.4)`)}>Homes <span style={css(`font-family:'Manrope',sans-serif;font-size:14px`)}>↗</span></span>
         </a>
         <a href="#contact" onClick={onNavClick} data-cursor="View" style={css(`position:relative;display:block;aspect-ratio:4/5;overflow:hidden;background:var(--forest-deep);color:#fff`)}>
-          <img src="assets/gallery/g2.jpeg" alt="Hotel room prepared with fresh towels" loading="lazy" style={css(`width:100%;height:100%;object-fit:cover;transition:transform 1.1s cubic-bezier(.16,1,.3,1);opacity:.86`)} data-hover="transform:scale(1.04)" />
+          <img {...gimg('g2', SZ_CARD)} alt="Hotel room prepared with fresh towels" loading="lazy" style={css(`width:100%;height:100%;object-fit:cover;transition:transform 1.1s cubic-bezier(.16,1,.3,1);opacity:.86`)} data-hover="transform:scale(1.04)" />
           <span style={css(`position:absolute;left:20px;bottom:20px;right:20px;display:flex;justify-content:space-between;align-items:flex-end;font-family:'Instrument Serif',serif;font-size:clamp(1.5rem,2.4vw,2.3rem);line-height:1;text-shadow:0 2px 20px rgba(0,0,0,.4)`)}>Hotels <span style={css(`font-family:'Manrope',sans-serif;font-size:14px`)}>↗</span></span>
-        </a>
-        <a href="#contact" onClick={onNavClick} style={css(`position:relative;display:flex;flex-direction:column;justify-content:space-between;aspect-ratio:4/5;padding:22px;background:var(--forest);color:var(--ivory);transition:background .5s`)} data-hover="background:#0A3D1C">
-          <span style={css(`font-size:10px;letter-spacing:.26em;text-transform:uppercase;color:rgba(248,246,240,.5)`)}>04</span>
-          <span style={css(`display:flex;justify-content:space-between;align-items:flex-end;font-family:'Instrument Serif',serif;font-size:clamp(1.5rem,2.4vw,2.3rem);line-height:1`)}>Workplaces <span style={css(`font-family:'Manrope',sans-serif;font-size:14px`)}>↗</span></span>
-        </a>
-        <a href="#contact" onClick={onNavClick} style={css(`position:relative;display:flex;flex-direction:column;justify-content:space-between;aspect-ratio:4/5;padding:22px;background:var(--forest-deep);color:var(--ivory);transition:background .5s`)} data-hover="background:#0A3D1C">
-          <span style={css(`font-size:10px;letter-spacing:.26em;text-transform:uppercase;color:rgba(248,246,240,.5)`)}>05</span>
-          <span style={css(`display:flex;justify-content:space-between;align-items:flex-end;font-family:'Instrument Serif',serif;font-size:clamp(1.5rem,2.4vw,2.3rem);line-height:1`)}>Retail <span style={css(`font-family:'Manrope',sans-serif;font-size:14px`)}>↗</span></span>
-        </a>
-        <a href="#contact" onClick={onNavClick} style={css(`position:relative;display:flex;flex-direction:column;justify-content:space-between;aspect-ratio:4/5;padding:22px;background:var(--pink);color:#fff;transition:background .5s`)} data-hover="background:#082E19">
-          <span style={css(`font-size:10px;letter-spacing:.26em;text-transform:uppercase;color:rgba(255,255,255,.65)`)}>06</span>
-          <span style={css(`display:flex;justify-content:space-between;align-items:flex-end;font-family:'Instrument Serif',serif;font-size:clamp(1.5rem,2.4vw,2.3rem);line-height:1`)}>Renovated properties <span style={css(`font-family:'Manrope',sans-serif;font-size:14px`)}>↗</span></span>
         </a>
       </div>
     </div>
@@ -571,6 +594,49 @@ export default function App({ accentPink = '#E90063', loopSpeed = 64, showLoader
           <div style={css(`position:relative;z-index:1`)}><h3 style={css(`font-size:13px;letter-spacing:.2em;text-transform:uppercase;margin:0 0 12px`)}>Final details</h3><p style={css(`margin:0;font-size:15px;line-height:1.66;color:#3A423C`)}>From linen and surfaces to those last visual touches before arrival.</p></div>
         </div>
       </div>
+    </div>
+  </section>
+
+  {/* BEFORE & AFTER */}
+  <section id="results" style={css(`background:var(--forest-deep);color:var(--ivory);padding:clamp(70px,9vw,140px) 0;overflow:hidden`)}>
+    <div style={css(`max-width:1440px;margin:0 auto;padding:0 clamp(20px,5vw,72px);display:flex;flex-wrap:wrap;justify-content:space-between;align-items:flex-end;gap:28px`)}>
+      <div>
+        <div style={css(`font-size:11px;letter-spacing:.28em;text-transform:uppercase;color:var(--pink-lt);font-weight:600`)}>Before &amp; after</div>
+        <h2 data-reveal="1" style={css(`font-family:'Instrument Serif',serif;font-weight:400;font-size:clamp(2.4rem,5.6vw,5.4rem);line-height:.95;letter-spacing:-.025em;margin:24px 0 0;opacity:0;transform:translateY(22px);transition:all .95s cubic-bezier(.16,1,.3,1)`)}>Same space.<br /><em style={css(`font-style:italic;color:var(--pink-lt)`)}>Different story.</em></h2>
+      </div>
+      <div style={css(`max-width:38ch`)}>
+        <p style={css(`margin:0;font-size:15px;line-height:1.65;color:rgba(248,246,240,.78)`)}>Ovens, hobs, sinks and floors — photographed exactly as we found them, and exactly as we left them.</p>
+        <div style={css(`display:flex;align-items:center;gap:12px;margin-top:24px`)}>
+          <button type="button" data-ba-nav="prev" aria-label="Previous result" style={css(`width:48px;height:48px;flex:0 0 auto;border-radius:50%;border:1px solid rgba(248,246,240,.32);background:transparent;color:var(--ivory);font-size:16px;cursor:pointer;transition:background .35s,border-color .35s,opacity .35s`)} data-hover="background:#E90063;border-color:#E90063">←</button>
+          <button type="button" data-ba-nav="next" aria-label="Next result" style={css(`width:48px;height:48px;flex:0 0 auto;border-radius:50%;border:1px solid rgba(248,246,240,.32);background:transparent;color:var(--ivory);font-size:16px;cursor:pointer;transition:background .35s,border-color .35s,opacity .35s`)} data-hover="background:#E90063;border-color:#E90063">→</button>
+          <div aria-hidden="true" style={css(`flex:1;min-width:90px;height:1px;background:rgba(248,246,240,.2);margin-left:10px;position:relative`)}>
+            <div ref={baBarRef} style={css(`position:absolute;left:0;top:-1px;height:3px;width:100%;background:var(--pink-lt);transform-origin:left;transform:scaleX(.2);transition:transform .25s ease-out`)}></div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <div ref={baTrackRef} data-r="batrack" tabIndex={0} role="group" aria-label="Before and after photos" style={css(`margin-top:clamp(34px,4vw,60px);display:flex;gap:clamp(12px,1.4vw,20px);overflow-x:auto;overscroll-behavior-x:contain;scroll-snap-type:x mandatory;-webkit-overflow-scrolling:touch;padding:0 max(clamp(20px,5vw,72px),calc(50vw - 648px));scroll-padding:0 max(clamp(20px,5vw,72px),calc(50vw - 648px));cursor:grab;user-select:none;-webkit-user-select:none`)}>
+      {results.map((r) => (
+        <figure key={r.id} data-ba-card="1" style={css(`flex:0 0 auto;width:clamp(264px,80vw,500px);margin:0;scroll-snap-align:start`)}>
+          <div style={css(`position:relative;display:grid;grid-template-columns:1fr 1fr;gap:2px;border-radius:4px;overflow:hidden;background:var(--forest-deep)`)}>
+            <div style={css(`position:relative;aspect-ratio:4/5;background:rgba(248,246,240,.08)`)}>
+              <img {...baImg(r.id, 'before')} alt={r.title + ' before cleaning'} style={css(`width:100%;height:100%;object-fit:cover;display:block`)} />
+              {r.labelled ? null : <span style={css(`position:absolute;left:10px;top:10px;padding:6px 10px;border-radius:999px;background:rgba(17,21,18,.66);color:#fff;font-size:9.5px;letter-spacing:.2em;text-transform:uppercase;font-weight:700`)}>Before</span>}
+            </div>
+            <div style={css(`position:relative;aspect-ratio:4/5;background:rgba(248,246,240,.08)`)}>
+              <img {...baImg(r.id, 'after')} alt={r.title + ' after cleaning'} style={css(`width:100%;height:100%;object-fit:cover;display:block`)} />
+              {r.labelled ? null : <span style={css(`position:absolute;left:10px;top:10px;padding:6px 10px;border-radius:999px;background:var(--pink);color:#fff;font-size:9.5px;letter-spacing:.2em;text-transform:uppercase;font-weight:700`)}>After</span>}
+            </div>
+            <span aria-hidden="true" style={css(`position:absolute;left:50%;top:50%;width:34px;height:34px;margin:-17px 0 0 -17px;border-radius:50%;background:var(--ivory);color:var(--pink);display:flex;align-items:center;justify-content:center;font-size:14px;box-shadow:0 6px 18px rgba(6,31,18,.35)`)}>→</span>
+          </div>
+          <figcaption style={css(`display:flex;justify-content:space-between;align-items:baseline;gap:14px;margin-top:14px`)}>
+            <span style={css(`font-family:'Instrument Serif',serif;font-size:clamp(20px,2vw,26px);line-height:1.1;letter-spacing:-.01em`)}>{r.title}</span>
+            <span style={css(`font-size:10px;letter-spacing:.22em;text-transform:uppercase;color:rgba(248,246,240,.55);white-space:nowrap`)}>{r.tag}</span>
+          </figcaption>
+        </figure>
+      ))}
+      <div aria-hidden="true" style={css(`flex:0 0 1px`)}></div>
     </div>
   </section>
 
@@ -634,7 +700,7 @@ export default function App({ accentPink = '#E90063', loopSpeed = 64, showLoader
               <div data-body="1" style={css(`max-height:0;overflow:hidden;transition:max-height .6s cubic-bezier(.16,1,.3,1)`)}><p style={css(`margin:0 0 20px;font-size:14.5px;line-height:1.66;color:#3A423C;max-width:48ch`)}>{s.d}</p></div>
             </div>
           ))}
-          <div style={css(`display:flex;align-items:baseline;gap:12px;margin:34px 0 14px`)}><span style={css(`font-size:10px;letter-spacing:.24em;color:var(--pink);font-weight:600`)}>Group 04</span><span style={css(`font-size:12px;letter-spacing:.2em;text-transform:uppercase;color:var(--muted)`)}>Business &amp; occasions</span></div>
+          <div id="commercial" style={css(`display:flex;align-items:baseline;gap:12px;margin:34px 0 14px`)}><span style={css(`font-size:10px;letter-spacing:.24em;color:var(--pink);font-weight:600`)}>Group 04</span><span style={css(`font-size:12px;letter-spacing:.2em;text-transform:uppercase;color:var(--muted)`)}>Business &amp; occasions</span></div>
           {groupD.map((s, $index) => (
             <div key={$index} style={css(`border-top:1px solid rgba(17,21,18,.12)`)}>
               <button type="button" onClick={toggleItem} style={css(`width:100%;display:flex;align-items:center;justify-content:space-between;gap:14px;background:transparent;border:0;padding:18px 0;text-align:left;cursor:pointer;min-height:44px;color:var(--ink);transition:color .35s`)} data-hover="color:#E90063">
@@ -668,7 +734,7 @@ export default function App({ accentPink = '#E90063', loopSpeed = 64, showLoader
   {/* FINAL CTA */}
   <section style={css(`position:relative;background:var(--ivory);padding:clamp(80px,11vw,170px) clamp(20px,5vw,72px);text-align:center`)}>
     <div style={css(`max-width:1100px;margin:0 auto`)}>
-      <img data-reveal="1" src="assets/brand/logo-premium.png" alt="Cleaning Stars" style={css(`width:min(520px,84vw);height:auto;margin:0 auto;display:block;opacity:0;transform:translateY(20px) scale(.97);transition:all 1.1s cubic-bezier(.16,1,.3,1)`)} />
+      <img data-reveal="1" src="assets/brand/logo-premium-640.webp" srcSet="assets/brand/logo-premium-640.webp 640w, assets/brand/logo-premium-1040.webp 1040w" sizes="(max-width:620px) 84vw, 520px" width="1558" height="1009" loading="lazy" decoding="async" alt="Cleaning Stars" style={css(`width:min(520px,84vw);height:auto;margin:0 auto;display:block;opacity:0;transform:translateY(20px) scale(.97);transition:all 1.1s cubic-bezier(.16,1,.3,1)`)} />
       <h2 data-reveal="1" data-delay="120" style={css(`font-family:'Instrument Serif',serif;font-weight:400;font-size:clamp(2.6rem,7.4vw,7rem);line-height:.92;letter-spacing:-.03em;margin:clamp(28px,4vw,48px) 0 0;opacity:0;transform:translateY(26px);transition:all 1s cubic-bezier(.16,1,.3,1)`)}>Let's get your<br /><em style={css(`font-style:italic;color:var(--pink)`)}>space ready.</em></h2>
       <p style={css(`max-width:48ch;margin:24px auto 0;font-size:16px;line-height:1.68;color:#3A423C`)}>Tell us what the property needs and we'll help you find the right Cleaning Stars service.</p>
       <div style={css(`display:flex;flex-wrap:wrap;gap:14px;justify-content:center;margin-top:36px`)}>
@@ -739,14 +805,14 @@ export default function App({ accentPink = '#E90063', loopSpeed = 64, showLoader
     <div style={css(`max-width:1440px;margin:0 auto;position:relative;z-index:1`)}>
       <div style={css(`display:grid;grid-template-columns:repeat(auto-fit,minmax(220px,1fr));gap:36px`)}>
         <div>
-          <img src="assets/brand/logo-flock.jpeg" alt="Cleaning Stars" style={css(`width:min(260px,60vw);height:auto;display:block;border-radius:3px`)} />
+          <img src="assets/brand/logo-flock-560.webp" width="560" height="361" loading="lazy" decoding="async" alt="Cleaning Stars" style={css(`width:min(260px,60vw);height:auto;display:block;border-radius:3px`)} />
           <div style={css(`margin-top:20px;font-size:13px;line-height:1.7;color:rgba(8,46,25,.65)`)}>Professional cleaning &amp; property services<br />London, UK</div>
         </div>
         <nav aria-label="Footer" style={css(`display:flex;flex-direction:column;gap:12px;font-size:12px;letter-spacing:.16em;text-transform:uppercase`)}>
           <a href="#services" onClick={onNavClick} style={css(`color:rgba(8,46,25,.8)`)} data-hover="color:#E90063">Services</a>
           <a href="#holiday" onClick={onNavClick} style={css(`color:rgba(8,46,25,.8)`)} data-hover="color:#E90063">Airbnb &amp; holiday lets</a>
           <a href="#directory" onClick={onNavClick} style={css(`color:rgba(8,46,25,.8)`)} data-hover="color:#E90063">Residential</a>
-          <a href="#types" onClick={onNavClick} style={css(`color:rgba(8,46,25,.8)`)} data-hover="color:#E90063">Commercial</a>
+          <a href="#commercial" onClick={onNavClick} style={css(`color:rgba(8,46,25,.8)`)} data-hover="color:#E90063">Commercial</a>
           <a href="#directory" onClick={onNavClick} style={css(`color:rgba(8,46,25,.8)`)} data-hover="color:#E90063">Property preparation</a>
           <a href="#contact" onClick={onNavClick} style={css(`color:rgba(8,46,25,.8)`)} data-hover="color:#E90063">Contact</a>
         </nav>
