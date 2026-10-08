@@ -18,6 +18,10 @@ function gimg(id, sizes) {
   return { src: 'assets/gallery/' + id + '-800.webp', srcSet: galSet(id), sizes, width: GAL[id][0], height: GAL[id][1], decoding: 'async' };
 }
 
+const EMAIL = 'hello@cleaningstars.co.uk';
+const WHATSAPP = '447743284790';
+const WA_HELLO = 'https://wa.me/' + WHATSAPP + '?text=' + encodeURIComponent("Hello Cleaning Stars, I'd like a quote for my property in London.");
+
 const SZ_PANEL_SM = '(max-width:1020px) 92vw, 1px';
 const SZ_PANEL = '(min-width:1021px) 46vw, 1px';
 const SZ_INSET = '(min-width:1021px) 15vw, 1px';
@@ -41,6 +45,7 @@ export default function App({ accentPink = '#E90063', loopSpeed = 64, showLoader
   const svcNumRef = useRef(null);
   const styleImgRef = useRef(null);
   const formMsgRef = useRef(null);
+  const formAltRef = useRef(null);
   const stickyCtaRef = useRef(null);
   const sparkleTextRef = useRef(null);
   const whatsRef = useRef(null);
@@ -216,20 +221,40 @@ export default function App({ accentPink = '#E90063', loopSpeed = 64, showLoader
       if (!valid) ok = false;
     });
     if (!msg) return;
+    if (formAltRef.current) formAltRef.current.style.display = 'none';
     if (!ok) {
       msg.textContent = 'Please add your name and a valid email address.';
+      msg.style.color = '';
       msg.style.opacity = '1';
       return;
     }
-    const btn = form.querySelector('button[type="submit"]');
-    if (btn) { btn.disabled = true; btn.style.opacity = '.6'; btn.textContent = 'Sending…'; }
-    msg.textContent = '';
-    setTimeout(() => {
-      if (btn) { btn.disabled = false; btn.style.opacity = '1'; btn.textContent = 'Request my quote →'; }
-      form.reset();
-      msg.textContent = 'Thanks — your enquiry has been received.';
-      msg.style.opacity = '1';
-    }, 700);
+    // The enquiry is handed to the visitor's own email app, addressed to the business and
+    // already written out, so nothing is ever "sent" without actually reaching the inbox.
+    const val = (n) => { const f = form.querySelector('[name="' + n + '"]'); return f ? f.value.trim() : ''; };
+    const date = val('date').split('-').reverse().join('/');
+    const lines = [
+      'Name: ' + val('name'),
+      'Email: ' + val('email'),
+      val('phone') && 'Phone: ' + val('phone'),
+      'Property type: ' + val('propertyType'),
+      val('service') && 'Service required: ' + val('service'),
+      date && 'Preferred date: ' + date,
+      val('postcode') && 'Postcode / area: ' + val('postcode'),
+      val('message') && '\n' + val('message')
+    ].filter(Boolean);
+    const subject = 'Quote request — ' + val('propertyType') + (val('postcode') ? ', ' + val('postcode') : '');
+    const body = lines.join('\n');
+    const link = document.createElement('a');
+    link.href = 'mailto:' + EMAIL + '?subject=' + encodeURIComponent(subject) + '&body=' + encodeURIComponent(body);
+    link.click();
+    msg.textContent = 'Your email app should now be open with your request ready — just press send. Nothing opened? Email ' + EMAIL + ' or';
+    msg.style.color = 'rgba(248,246,240,.9)';
+    msg.style.opacity = '1';
+    const alt = formAltRef.current;
+    if (alt) {
+      alt.href = 'https://wa.me/' + WHATSAPP + '?text=' + encodeURIComponent('Hello Cleaning Stars, I\'d like a quote.\n\n' + body);
+      alt.style.display = 'inline';
+    }
   }
 
   function dismissCta() {
@@ -752,7 +777,8 @@ export default function App({ accentPink = '#E90063', loopSpeed = 64, showLoader
         <div style={css(`font-size:11px;letter-spacing:.28em;text-transform:uppercase;color:rgba(248,246,240,.5)`)}>Request a quote</div>
         <h2 style={css(`font-family:'Instrument Serif',serif;font-weight:400;font-size:clamp(2.2rem,5vw,4.4rem);line-height:.96;letter-spacing:-.025em;margin:22px 0 0`)}>Tell us about<br /><em style={css(`font-style:italic;color:var(--pink-lt)`)}>the property.</em></h2>
         <p style={css(`margin:24px 0 0;font-size:15.5px;line-height:1.7;color:rgba(248,246,240,.72);max-width:38ch`)}>Share the essentials — property type, area and what needs preparing — and we'll come back with the right service.</p>
-        <a href="https://wa.me/447743284790?text=Hello%20Cleaning%20Stars%2C%20I%27d%20like%20a%20quote%20for%20my%20property%20in%20London." target="_blank" rel="noopener" data-magnetic="1" style={css(`display:inline-flex;align-items:center;gap:12px;margin-top:30px;border:1px solid rgba(248,246,240,.3);color:var(--ivory);padding:16px 24px;border-radius:999px;font-size:11.5px;letter-spacing:.18em;text-transform:uppercase;font-weight:600;min-height:44px;transition:background .4s,color .4s,border-color .4s,transform .3s cubic-bezier(.16,1,.3,1)`)} data-hover="background:#F8F6F0;color:#082E19;border-color:#F8F6F0">WhatsApp +44 7743 284790</a>
+        <a href={WA_HELLO} target="_blank" rel="noopener" data-magnetic="1" style={css(`display:inline-flex;align-items:center;gap:12px;margin-top:30px;border:1px solid rgba(248,246,240,.3);color:var(--ivory);padding:16px 24px;border-radius:999px;font-size:11.5px;letter-spacing:.18em;text-transform:uppercase;font-weight:600;min-height:44px;transition:background .4s,color .4s,border-color .4s,transform .3s cubic-bezier(.16,1,.3,1)`)} data-hover="background:#F8F6F0;color:#082E19;border-color:#F8F6F0">WhatsApp +44 7743 284790</a>
+        <div style={css(`margin-top:18px`)}><a href={'mailto:' + EMAIL} style={css(`color:var(--ivory);font-size:15px;letter-spacing:.02em;border-bottom:1px solid rgba(248,246,240,.35);padding-bottom:3px;transition:color .35s,border-color .35s`)} data-hover="color:#FF3C88;border-color:#FF3C88">{EMAIL}</a></div>
         <div style={css(`margin-top:36px;display:flex;flex-direction:column;gap:8px;font-size:11px;letter-spacing:.24em;text-transform:uppercase;color:rgba(248,246,240,.5)`)}>
           <span>London, United Kingdom</span>
           <span>Cleaning • Turnovers • Property prep</span>
@@ -794,7 +820,10 @@ export default function App({ accentPink = '#E90063', loopSpeed = 64, showLoader
         </label>
         <div style={css(`grid-column:1/-1;display:flex;flex-wrap:wrap;align-items:center;gap:18px;margin-top:8px`)}>
           <button type="submit" data-magnetic="1" style={css(`display:inline-flex;align-items:center;gap:12px;background:var(--pink);color:#fff;border:0;padding:20px 30px;border-radius:999px;font-size:12px;letter-spacing:.18em;text-transform:uppercase;font-weight:600;min-height:44px;cursor:pointer;transition:background .4s,transform .3s cubic-bezier(.16,1,.3,1)`)} data-hover="background:#F8F6F0;color:#082E19">Request my quote →</button>
-          <span ref={formMsgRef} role="status" style={css(`font-size:13px;letter-spacing:.04em;color:var(--pink-lt);opacity:0;transition:opacity .5s`)}></span>
+          <span style={css(`font-size:13px;line-height:1.55;letter-spacing:.02em;max-width:44ch`)}>
+            <span ref={formMsgRef} role="status" style={css(`color:var(--pink-lt);opacity:0;transition:opacity .5s`)}></span>
+            {' '}<a ref={formAltRef} href={WA_HELLO} target="_blank" rel="noopener" style={css(`display:none;color:var(--ivory);text-decoration:underline;text-underline-offset:3px`)}>send it on WhatsApp instead</a>
+          </span>
         </div>
       </form>
     </div>
@@ -831,7 +860,7 @@ export default function App({ accentPink = '#E90063', loopSpeed = 64, showLoader
   </main>
 
   {/* WHATSAPP FLOAT */}
-  <a ref={whatsRef} href="https://wa.me/447743284790?text=Hello%20Cleaning%20Stars%2C%20I%27d%20like%20a%20quote%20for%20my%20property%20in%20London." target="_blank" rel="noopener" aria-label="Message Cleaning Stars on WhatsApp" data-cursor="Chat" style={css(`position:fixed;right:clamp(14px,2.4vw,32px);bottom:clamp(88px,11vh,120px);z-index:750;width:60px;height:60px;border-radius:50%;display:flex;align-items:center;justify-content:center;background:var(--leaf);color:#fff;border:2.5px solid var(--pink);box-shadow:0 16px 40px rgba(6,31,18,.3),0 0 0 4px rgba(233,0,99,.14);opacity:0;transform:translate3d(0,26px,0);transition:opacity .6s cubic-bezier(.16,1,.3,1),background .4s,transform .3s cubic-bezier(.16,1,.3,1);will-change:transform`)} data-hover="transform:translate3d(0,-3px,0)">
+  <a ref={whatsRef} href={WA_HELLO} target="_blank" rel="noopener" aria-label="Message Cleaning Stars on WhatsApp" data-cursor="Chat" style={css(`position:fixed;right:clamp(14px,2.4vw,32px);bottom:clamp(88px,11vh,120px);z-index:750;width:60px;height:60px;border-radius:50%;display:flex;align-items:center;justify-content:center;background:var(--leaf);color:#fff;border:2.5px solid var(--pink);box-shadow:0 16px 40px rgba(6,31,18,.3),0 0 0 4px rgba(233,0,99,.14);opacity:0;transform:translate3d(0,26px,0);transition:opacity .6s cubic-bezier(.16,1,.3,1),background .4s,transform .3s cubic-bezier(.16,1,.3,1);will-change:transform`)} data-hover="transform:translate3d(0,-3px,0)">
     <svg viewBox="0 0 32 32" width="27" height="27" aria-hidden="true" fill="currentColor"><path d="M16 3C8.8 3 3 8.8 3 16c0 2.3.6 4.5 1.7 6.4L3 29l6.8-1.7c1.9 1 4 1.6 6.2 1.6 7.2 0 13-5.8 13-13S23.2 3 16 3zm0 23.6c-2 0-3.9-.5-5.6-1.5l-.4-.2-4.1 1 1.1-4-.3-.4A10.5 10.5 0 1 1 16 26.6z"></path><path d="M22 19c-.3-.2-2-1-2.3-1.1-.3-.1-.5-.2-.8.2l-1 1.3c-.2.2-.4.3-.7.1-.4-.2-1.5-.6-2.8-1.7-1-.9-1.7-2-1.9-2.4-.2-.3 0-.5.2-.7l.5-.6c.2-.2.2-.4.4-.6.1-.2.1-.4 0-.6l-1-2.5c-.3-.6-.5-.5-.8-.5h-.7c-.2 0-.6.1-.9.5s-1.2 1.2-1.2 2.9 1.3 3.3 1.4 3.6c.2.2 2.5 3.9 6 5.3 2.4.9 2.9.8 3.4.7.5 0 1.7-.7 2-1.4.2-.7.2-1.3.2-1.4-.1-.1-.3-.2-.6-.4z"></path></svg>
   </a>
 
