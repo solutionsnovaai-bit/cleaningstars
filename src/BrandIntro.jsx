@@ -9,6 +9,7 @@ const BrandIntro = forwardRef(function BrandIntro(_, ref) {
     <div ref={ref} className="cs-intro" role="dialog" aria-modal="true" aria-label="Welcome to Cleaning Stars" tabIndex={-1}>
       <div className="cs-intro__halo" aria-hidden="true" />
       <div className="cs-intro__orbit" aria-hidden="true"><i /><i /></div>
+      <svg className="cs-intro__comet" viewBox="0 0 1440 900" preserveAspectRatio="xMidYMid slice" aria-hidden="true"><path pathLength="1" d="M-150 880C250 900 180 180 720 420S1130 800 1550 20" /><path pathLength="1" d="M-150 830C290 820 180 100 720 420S1130 850 1550 70" /></svg>
       <div className="cs-intro__paper" aria-hidden="true" />
       <div className="cs-intro__top" aria-hidden="true"><span>Considered care.</span><span>Exceptional spaces.</span></div>
       <div className="cs-intro__stage" aria-hidden="true">

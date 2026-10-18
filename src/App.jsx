@@ -2,6 +2,7 @@ import { useRef, useEffect } from 'react';
 import { css } from './utils.js';
 import { initSite } from './behaviors.js';
 import BrandIntro from './BrandIntro.jsx';
+import ScrollScene from './ScrollScene.jsx';
 import './motion.css';
 
 // 1×1 transparent GIF: placeholder for images whose real source is chosen by <picture> or set on demand.
@@ -76,20 +77,20 @@ export default function App({ accentPink = '#E90063', loopSpeed = 64, showLoader
   const loopA = wrap(gal);
   const loopB = wrap(galB);
 
-  // Before / after pairs. `labelled` = the photo already carries its own "Before" / "After" caption.
+  // Before / after captions are rendered in code for every pair.
   const results = [
-    { id: 'oven-door', title: 'Oven door glass', tag: 'Oven cleaning', labelled: true },
+    { id: 'oven-door', title: 'Oven door glass', tag: 'Oven cleaning' },
     { id: 'floor', title: 'Floors & skirting', tag: 'Deep cleaning' },
     { id: 'hob', title: 'Electric hob', tag: 'Appliance cleaning' },
     { id: 'sink', title: 'Kitchen sink', tag: 'Deep cleaning' },
-    { id: 'oven-interior', title: 'Oven interior', tag: 'Oven cleaning', labelled: true },
+    { id: 'oven-interior', title: 'Oven interior', tag: 'Oven cleaning' },
     { id: 'baking-tray', title: 'Baking tray', tag: 'Appliance cleaning' },
     { id: 'mugs', title: 'Tea-stained mugs', tag: 'Kitchen detail' },
-    { id: 'oven-base', title: 'Oven base', tag: 'Oven cleaning', labelled: true }
+    { id: 'oven-base', title: 'Oven base', tag: 'Oven cleaning' }
   ];
   const baImg = (id, kind) => ({
-    src: 'assets/before-after/' + id + '-' + kind + '-600.webp',
-    srcSet: 'assets/before-after/' + id + '-' + kind + '-320.webp 320w, assets/before-after/' + id + '-' + kind + '-600.webp 600w',
+    src: (id.startsWith('oven-') ? 'assets/before-after-clean/' : 'assets/before-after/') + id + '-' + kind + '-600.webp',
+    srcSet: (id.startsWith('oven-') ? 'assets/before-after-clean/' : 'assets/before-after/') + id + '-' + kind + '-320.webp 320w, ' + (id.startsWith('oven-') ? 'assets/before-after-clean/' : 'assets/before-after/') + id + '-' + kind + '-600.webp 600w',
     sizes: '(max-width:640px) 39vw, 250px', width: 600, height: 750, loading: 'lazy', decoding: 'async', draggable: false
   });
 
@@ -395,7 +396,8 @@ export default function App({ accentPink = '#E90063', loopSpeed = 64, showLoader
   </section>
 
   {/* POSITIONING */}
-  <section style={css(`position:relative;background:var(--paper);padding:clamp(80px,11vw,170px) clamp(20px,5vw,72px);overflow:hidden;background-image:radial-gradient(rgba(233,0,99,.2) 2px,transparent 2px),radial-gradient(rgba(8,46,25,.14) 2px,transparent 2px);background-size:30px 30px;background-position:0 0,15px 15px`)}>
+  <section data-scene="care" style={css(`position:relative;background:var(--paper);padding:clamp(80px,11vw,170px) clamp(20px,5vw,72px);overflow:hidden;background-image:radial-gradient(rgba(233,0,99,.2) 2px,transparent 2px),radial-gradient(rgba(8,46,25,.14) 2px,transparent 2px);background-size:30px 30px;background-position:0 0,15px 15px`)}>
+    <ScrollScene variant="care" />
     <div ref={sparkleRef} aria-hidden="true" style={css(`position:absolute;right:-4%;top:14%;width:min(340px,40vw);height:min(340px,40vw);opacity:.07;animation:csFloat 11s ease-in-out infinite;pointer-events:none;background:conic-gradient(from 45deg,transparent 0 8%,var(--pink) 12%,transparent 20% 33%,var(--pink) 37%,transparent 45% 58%,var(--pink) 62%,transparent 70% 83%,var(--pink) 87%,transparent 95%);mask-image:radial-gradient(circle,#000 62%,transparent 70%);-webkit-mask-image:radial-gradient(circle,#000 62%,transparent 70%)`)}></div>
     <div style={css(`max-width:1440px;margin:0 auto;display:grid;grid-template-columns:minmax(0,1fr) minmax(0,.78fr);gap:clamp(32px,6vw,90px);align-items:end`)} data-r="two">
       <div>
@@ -494,7 +496,8 @@ export default function App({ accentPink = '#E90063', loopSpeed = 64, showLoader
   </section>
 
   {/* PHOTOGRAPHY */}
-  <section style={css(`background:var(--cream);padding:clamp(70px,9vw,130px) 0;overflow:hidden`)}>
+  <section data-scene="gallery" style={css(`background:var(--cream);padding:clamp(70px,9vw,130px) 0;overflow:hidden`)}>
+    <ScrollScene variant="gallery" />
     <div style={css(`max-width:1440px;margin:0 auto;padding:0 clamp(20px,5vw,72px);display:flex;flex-wrap:wrap;justify-content:space-between;align-items:flex-end;gap:20px`)}>
       <h2 data-reveal="1" style={css(`font-family:'Instrument Serif',serif;font-weight:400;font-size:clamp(2.4rem,5.6vw,5.4rem);line-height:.95;letter-spacing:-.025em;margin:0;opacity:0;transform:translateY(22px);transition:all .95s cubic-bezier(.16,1,.3,1)`)}>Real spaces.<br /><em style={css(`font-style:italic;color:var(--pink)`)}>Real details.</em></h2>
       <p style={css(`max-width:34ch;margin:0;font-size:15px;line-height:1.65;color:#3A423C`)}>Properties prepared by Cleaning Stars — linen, presentation and the finishing touches guests notice first.</p>
@@ -550,7 +553,8 @@ export default function App({ accentPink = '#E90063', loopSpeed = 64, showLoader
   </section>
 
   {/* STYLING */}
-  <section style={css(`background:var(--ivory);padding:clamp(80px,11vw,160px) clamp(20px,5vw,72px)`)}>
+  <section data-scene="styling" style={css(`background:var(--ivory);padding:clamp(80px,11vw,160px) clamp(20px,5vw,72px)`)}>
+    <ScrollScene variant="styling" />
     <div style={css(`max-width:1440px;margin:0 auto;display:grid;grid-template-columns:minmax(0,1fr) minmax(0,.9fr);gap:clamp(30px,5vw,80px);align-items:center`)} data-r="two">
       <div>
         <div style={css(`font-size:11px;letter-spacing:.28em;text-transform:uppercase;color:var(--pink);font-weight:600`)}>Setups &amp; styling</div>
@@ -573,7 +577,8 @@ export default function App({ accentPink = '#E90063', loopSpeed = 64, showLoader
   </section>
 
   {/* PROPERTY TYPES */}
-  <section id="types" style={css(`background:var(--paper);padding:clamp(70px,9vw,140px) clamp(20px,5vw,72px)`)}>
+  <section data-scene="spaces" id="types" style={css(`background:var(--paper);padding:clamp(70px,9vw,140px) clamp(20px,5vw,72px)`)}>
+    <ScrollScene variant="spaces" />
     <div style={css(`max-width:1440px;margin:0 auto`)}>
       <h2 data-reveal="1" style={css(`font-family:'Instrument Serif',serif;font-weight:400;font-size:clamp(2.2rem,5vw,4.6rem);line-height:.98;letter-spacing:-.02em;margin:0 0 clamp(28px,4vw,52px);opacity:0;transform:translateY(20px);transition:all .9s cubic-bezier(.16,1,.3,1)`)}>Spaces we prepare</h2>
       <div style={css(`display:grid;grid-template-columns:repeat(auto-fit,minmax(280px,1fr));gap:14px`)}>
@@ -594,7 +599,8 @@ export default function App({ accentPink = '#E90063', loopSpeed = 64, showLoader
   </section>
 
   {/* STANDARD */}
-  <section id="standard" style={css(`background:var(--ivory);padding:clamp(80px,11vw,160px) clamp(20px,5vw,72px)`)}>
+  <section data-scene="standard" id="standard" style={css(`background:var(--ivory);padding:clamp(80px,11vw,160px) clamp(20px,5vw,72px)`)}>
+    <ScrollScene variant="standard" />
     <div style={css(`max-width:1440px;margin:0 auto`)}>
       <h2 data-reveal="1" style={css(`font-family:'Instrument Serif',serif;font-weight:400;font-size:clamp(2.4rem,6vw,5.6rem);line-height:.94;letter-spacing:-.025em;margin:0;max-width:16ch;opacity:0;transform:translateY(24px);transition:all .95s cubic-bezier(.16,1,.3,1)`)}>The details <em style={css(`font-style:italic;color:var(--pink)`)}>people notice.</em></h2>
       <div style={css(`display:grid;grid-template-columns:repeat(auto-fit,minmax(240px,1fr));gap:clamp(24px,3vw,44px);margin-top:clamp(44px,6vw,80px)`)}>
@@ -619,14 +625,15 @@ export default function App({ accentPink = '#E90063', loopSpeed = 64, showLoader
   </section>
 
   {/* BEFORE & AFTER */}
-  <section id="results" style={css(`background:var(--forest-deep);color:var(--ivory);padding:clamp(70px,9vw,140px) 0;overflow:hidden`)}>
+  <section data-scene="results" id="results" style={css(`background:var(--forest-deep);color:var(--ivory);padding:clamp(70px,9vw,140px) 0;overflow:hidden`)}>
+    <ScrollScene variant="results" />
     <div style={css(`max-width:1440px;margin:0 auto;padding:0 clamp(20px,5vw,72px);display:flex;flex-wrap:wrap;justify-content:space-between;align-items:flex-end;gap:28px`)}>
       <div>
         <div style={css(`font-size:11px;letter-spacing:.28em;text-transform:uppercase;color:var(--pink-lt);font-weight:600`)}>Before &amp; after</div>
         <h2 data-reveal="1" style={css(`font-family:'Instrument Serif',serif;font-weight:400;font-size:clamp(2.4rem,5.6vw,5.4rem);line-height:.95;letter-spacing:-.025em;margin:24px 0 0;opacity:0;transform:translateY(22px);transition:all .95s cubic-bezier(.16,1,.3,1)`)}>Same space.<br /><em style={css(`font-style:italic;color:var(--pink-lt)`)}>Different story.</em></h2>
       </div>
       <div style={css(`max-width:38ch`)}>
-        <p style={css(`margin:0;font-size:15px;line-height:1.65;color:rgba(248,246,240,.78)`)}>Ovens, hobs, sinks and floors — photographed exactly as we found them, and exactly as we left them.</p>
+        <p style={css(`margin:0;font-size:15px;line-height:1.65;color:rgba(248,246,240,.78)`)}>Ovens, hobs, sinks and floors — real spaces, before and after our care.</p>
         <div style={css(`display:flex;align-items:center;gap:12px;margin-top:24px`)}>
           <button type="button" data-ba-nav="prev" aria-label="Previous result" style={css(`width:48px;height:48px;flex:0 0 auto;border-radius:50%;border:1px solid rgba(248,246,240,.32);background:transparent;color:var(--ivory);font-size:16px;cursor:pointer;transition:background .35s,border-color .35s,opacity .35s`)} data-hover="background:#E90063;border-color:#E90063">←</button>
           <button type="button" data-ba-nav="next" aria-label="Next result" style={css(`width:48px;height:48px;flex:0 0 auto;border-radius:50%;border:1px solid rgba(248,246,240,.32);background:transparent;color:var(--ivory);font-size:16px;cursor:pointer;transition:background .35s,border-color .35s,opacity .35s`)} data-hover="background:#E90063;border-color:#E90063">→</button>
@@ -643,11 +650,11 @@ export default function App({ accentPink = '#E90063', loopSpeed = 64, showLoader
           <div style={css(`position:relative;display:grid;grid-template-columns:1fr 1fr;gap:2px;border-radius:4px;overflow:hidden;background:var(--forest-deep)`)}>
             <div style={css(`position:relative;aspect-ratio:4/5;background:rgba(248,246,240,.08)`)}>
               <img {...baImg(r.id, 'before')} alt={r.title + ' before cleaning'} style={css(`width:100%;height:100%;object-fit:cover;display:block`)} />
-              {r.labelled ? null : <span style={css(`position:absolute;left:10px;top:10px;padding:6px 10px;border-radius:999px;background:rgba(17,21,18,.66);color:#fff;font-size:9.5px;letter-spacing:.2em;text-transform:uppercase;font-weight:700`)}>Before</span>}
+              {<span style={css(`position:absolute;left:10px;top:10px;padding:6px 10px;border-radius:999px;background:rgba(17,21,18,.66);color:#fff;font-size:9.5px;letter-spacing:.2em;text-transform:uppercase;font-weight:700`)}>Before</span>}
             </div>
             <div style={css(`position:relative;aspect-ratio:4/5;background:rgba(248,246,240,.08)`)}>
               <img {...baImg(r.id, 'after')} alt={r.title + ' after cleaning'} style={css(`width:100%;height:100%;object-fit:cover;display:block`)} />
-              {r.labelled ? null : <span style={css(`position:absolute;left:10px;top:10px;padding:6px 10px;border-radius:999px;background:var(--pink);color:#fff;font-size:9.5px;letter-spacing:.2em;text-transform:uppercase;font-weight:700`)}>After</span>}
+              {<span style={css(`position:absolute;left:10px;top:10px;padding:6px 10px;border-radius:999px;background:var(--pink);color:#fff;font-size:9.5px;letter-spacing:.2em;text-transform:uppercase;font-weight:700`)}>After</span>}
             </div>
             <span aria-hidden="true" style={css(`position:absolute;left:50%;top:50%;width:34px;height:34px;margin:-17px 0 0 -17px;border-radius:50%;background:var(--ivory);color:var(--pink);display:flex;align-items:center;justify-content:center;font-size:14px;box-shadow:0 6px 18px rgba(6,31,18,.35)`)}>→</span>
           </div>
@@ -662,7 +669,8 @@ export default function App({ accentPink = '#E90063', loopSpeed = 64, showLoader
   </section>
 
   {/* PROCESS */}
-  <section style={css(`background:var(--paper);padding:clamp(70px,9vw,140px) clamp(20px,5vw,72px);background-image:radial-gradient(rgba(233,0,99,.2) 2px,transparent 2px),radial-gradient(rgba(8,46,25,.14) 2px,transparent 2px);background-size:30px 30px;background-position:0 0,15px 15px`)}>
+  <section data-scene="process" style={css(`background:var(--paper);padding:clamp(70px,9vw,140px) clamp(20px,5vw,72px);background-image:radial-gradient(rgba(233,0,99,.2) 2px,transparent 2px),radial-gradient(rgba(8,46,25,.14) 2px,transparent 2px);background-size:30px 30px;background-position:0 0,15px 15px`)}>
+    <ScrollScene variant="process" />
     <div style={css(`max-width:1440px;margin:0 auto`)}>
       <div style={css(`display:flex;flex-wrap:wrap;justify-content:space-between;align-items:flex-end;gap:16px`)}>
         <h2 style={css(`font-family:'Instrument Serif',serif;font-weight:400;font-size:clamp(2rem,4.4vw,3.8rem);line-height:1;letter-spacing:-.02em;margin:0`)}>How it works</h2>
@@ -753,7 +761,8 @@ export default function App({ accentPink = '#E90063', loopSpeed = 64, showLoader
   </section>
 
   {/* FINAL CTA */}
-  <section style={css(`position:relative;background:var(--ivory);padding:clamp(80px,11vw,170px) clamp(20px,5vw,72px);text-align:center`)}>
+  <section data-scene="signature" style={css(`position:relative;background:var(--ivory);padding:clamp(80px,11vw,170px) clamp(20px,5vw,72px);text-align:center`)}>
+    <ScrollScene variant="signature" />
     <div style={css(`max-width:1100px;margin:0 auto`)}>
       <img data-reveal="1" src="assets/brand/logo-premium-640.webp" srcSet="assets/brand/logo-premium-640.webp 640w, assets/brand/logo-premium-1040.webp 1040w" sizes="(max-width:620px) 84vw, 520px" width="1558" height="1009" loading="lazy" decoding="async" alt="Cleaning Stars" style={css(`width:min(520px,84vw);height:auto;margin:0 auto;display:block;opacity:0;transform:translateY(20px) scale(.97);transition:all 1.1s cubic-bezier(.16,1,.3,1)`)} />
       <h2 data-reveal="1" data-delay="120" style={css(`font-family:'Instrument Serif',serif;font-weight:400;font-size:clamp(2.6rem,7.4vw,7rem);line-height:.92;letter-spacing:-.03em;margin:clamp(28px,4vw,48px) 0 0;opacity:0;transform:translateY(26px);transition:all 1s cubic-bezier(.16,1,.3,1)`)}>Let's get your<br /><em style={css(`font-style:italic;color:var(--pink)`)}>space ready.</em></h2>
@@ -767,7 +776,8 @@ export default function App({ accentPink = '#E90063', loopSpeed = 64, showLoader
   </section>
 
   {/* CONTACT */}
-  <section id="contact" style={css(`background:var(--forest);color:var(--ivory);padding:clamp(80px,11vw,160px) clamp(20px,5vw,72px)`)}>
+  <section data-scene="contact" id="contact" style={css(`background:var(--forest);color:var(--ivory);padding:clamp(80px,11vw,160px) clamp(20px,5vw,72px)`)}>
+    <ScrollScene variant="contact" />
     <div style={css(`max-width:1240px;margin:0 auto;display:grid;grid-template-columns:minmax(0,.7fr) minmax(0,1fr);gap:clamp(30px,5vw,80px)`)} data-r="two">
       <div>
         <div style={css(`font-size:11px;letter-spacing:.28em;text-transform:uppercase;color:rgba(248,246,240,.5)`)}>Request a quote</div>

@@ -98,6 +98,7 @@ export function wireScrollMotion(root, refs, cleanup) {
   add(root.querySelector('[data-r="flow"]'), 'flow');
   root.querySelectorAll('[data-cursor="View"]').forEach(el => add(el, 'photo'));
   add(refs.styleImgRef.current?.parentElement, 'photo');
+  root.querySelectorAll('[data-scene]').forEach(el => add(el, 'scene'));
   const active = new Set();
   let frame = 0, measureFrame = 0, stopped = false;
   function measure() {
@@ -121,6 +122,11 @@ export function wireScrollMotion(root, refs, cleanup) {
       } else if (item.kind === 'holiday') {
         item.el.style.setProperty('--star-turn', `${(-18 + p * 55).toFixed(2)}deg`);
         item.el.style.setProperty('--star-rise', `${((p - .5) * 95).toFixed(1)}px`);
+      } else if (item.kind === 'scene') {
+        item.el.style.setProperty('--scene-shift', `${((p - .5) * (desktop.matches ? 160 : 65)).toFixed(1)}px`);
+        item.el.style.setProperty('--scene-turn', `${(-28 + p * 74).toFixed(2)}deg`);
+        item.el.style.setProperty('--scene-draw', (1 - clamp(p * 1.7)).toFixed(3));
+        item.el.style.setProperty('--scene-reveal', clamp((p - .1) * 2.5).toFixed(3));
       } else {
         const flow = clamp((y + height * .82 - item.top) / Math.max(1, desktop.matches ? height * .4 : item.height * .9));
         item.el.style.setProperty('--flow-progress', flow.toFixed(3));
@@ -134,6 +140,7 @@ export function wireScrollMotion(root, refs, cleanup) {
     entries.forEach(entry => {
       const item = targets.find(target => target.el === entry.target);
       if (entry.isIntersecting) { item.progress = -1; active.add(item); } else active.delete(item);
+      if (item.kind === 'scene') item.el.dataset.sceneVisible = entry.isIntersecting ? '1' : '0';
     });
     update();
   }, { rootMargin: '15% 0px' });
