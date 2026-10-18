@@ -1,4 +1,6 @@
 import { css } from './utils.js';
+import { runBrandIntro } from './intro.js';
+import { prepareEditorialMotion, wireEditorialReveals, wireScrollMotion, enterHero } from './motion.js';
 
 function prefersReducedMotion() {
   return typeof window !== 'undefined' && window.matchMedia('(prefers-reduced-motion: reduce)').matches;
@@ -24,37 +26,6 @@ function initInteractiveStyles(root) {
   wire('data-focus', 'focus', 'blur');
   wire('data-active', 'mousedown', 'mouseup');
   return () => cleanups.forEach((fn) => fn());
-}
-
-function runLoader(refs, props, cleanup) {
-  const el = refs.loaderRef.current; if (!el) return;
-  const show = props.showLoader !== false && !prefersReducedMotion();
-  if (!show) { el.style.display = 'none'; return; }
-  const mark = refs.loaderMarkRef.current, txt = refs.loaderTxtRef.current;
-  requestAnimationFrame(() => { if (mark) mark.style.opacity = '1'; if (txt) txt.style.opacity = '1'; });
-  const t1 = setTimeout(() => { el.style.opacity = '0'; el.style.visibility = 'hidden'; }, 1500);
-  const t2 = setTimeout(() => { el.style.display = 'none'; }, 2400);
-  cleanup.push(() => { clearTimeout(t1); clearTimeout(t2); });
-}
-
-function wireReveals(root, cleanup) {
-  const els = root.querySelectorAll('[data-reveal],[data-flow-step]');
-  if (prefersReducedMotion() || !('IntersectionObserver' in window)) {
-    els.forEach((el) => el.setAttribute('data-shown', '1'));
-    return;
-  }
-  const isMobile = window.innerWidth <= 640;
-  const io = new IntersectionObserver((entries) => {
-    entries.forEach((e) => {
-      if (!e.isIntersecting) return;
-      const el = e.target;
-      const d = parseInt(el.getAttribute('data-delay') || '0', 10);
-      setTimeout(() => el.setAttribute('data-shown', '1'), isMobile ? Math.min(d, 120) : d);
-      io.unobserve(el);
-    });
-  }, { threshold: isMobile ? 0.02 : 0.12, rootMargin: isMobile ? '0px 0px 0px 0px' : '0px 0px -8% 0px' });
-  els.forEach((el) => io.observe(el));
-  cleanup.push(() => io.disconnect());
 }
 
 function wireScroll(refs, state, cleanup) {
@@ -92,9 +63,6 @@ function wireScroll(refs, state, cleanup) {
         const hide = small.matches && y <= 60;
         navLogo.style.opacity = hide ? '0' : '1';
         navLogo.style.pointerEvents = hide ? 'none' : 'auto';
-      }
-      if (art && !reduced && y < window.innerHeight * 1.2) {
-        art.style.transform = 'translate3d(0,' + (y * 0.05).toFixed(2) + 'px,0) scale(1.04)';
       }
       if (cta && !state.ctaDismissed) {
         const on = y > window.innerHeight * 0.9;
@@ -148,6 +116,7 @@ function wireServices(root, refs, cleanup) {
     current = i;
     medias.forEach((m) => {
       const on = parseInt(m.getAttribute('data-svc-media'), 10) === i;
+      m.dataset.serviceActive = on ? '1' : '0';
       m.style.opacity = on ? '1' : '0';
       m.style.zIndex = on ? '2' : '1';
       const main = m.querySelector('[data-svc-main]');
@@ -375,8 +344,13 @@ export function initSite(root, refs, props, state) {
   if (!root) return () => {};
   const cleanup = [];
   applyAccentColor(refs, props);
-  runLoader(refs, props, cleanup);
-  wireReveals(root, cleanup);
+  prepareEditorialMotion(root, refs, cleanup);
+  const stopIntro = runBrandIntro(root, refs, props, () => {
+    wireEditorialReveals(root, cleanup);
+    enterHero(root, refs, cleanup);
+  });
+  cleanup.push(stopIntro);
+  wireScrollMotion(root, refs, cleanup);
   wireScroll(refs, state, cleanup);
   wireRotator(refs, cleanup);
   wireServices(root, refs, cleanup);
@@ -390,3 +364,4 @@ export function initSite(root, refs, props, state) {
   cleanup.push(stopInteractive);
   return () => cleanup.forEach((fn) => { try { fn(); } catch (e) { /* noop */ } });
 }
+

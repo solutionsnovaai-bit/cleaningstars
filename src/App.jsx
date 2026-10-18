@@ -1,6 +1,8 @@
 import { useRef, useEffect } from 'react';
 import { css } from './utils.js';
 import { initSite } from './behaviors.js';
+import BrandIntro from './BrandIntro.jsx';
+import './motion.css';
 
 // 1×1 transparent GIF: placeholder for images whose real source is chosen by <picture> or set on demand.
 const PX = 'data:image/gif;base64,R0lGODlhAQABAAAAACH5BAEKAAEALAAAAAABAAEAAAICTAEAOw==';
@@ -169,6 +171,7 @@ export default function App({ accentPink = '#E90063', loopSpeed = 64, showLoader
     const icon = btn.lastElementChild;
     if (!body) return;
     const open = body.style.maxHeight && body.style.maxHeight !== '0px';
+    btn.setAttribute('aria-expanded', String(!open));
     if (open) {
       body.style.maxHeight = '0px';
       if (icon) icon.style.transform = 'rotate(0deg)';
@@ -268,16 +271,7 @@ export default function App({ accentPink = '#E90063', loopSpeed = 64, showLoader
 
   <a href="#main" style={css(`position:absolute;left:-9999px;top:0;z-index:10000;background:var(--forest);color:#fff;padding:14px 20px;font-size:13px;letter-spacing:.16em;text-transform:uppercase`)} data-focus="left:12px;top:12px">Skip to content</a>
 
-  {/* LOADER */}
-  <div ref={loaderRef} style={css(`position:fixed;inset:0;z-index:9999;background:var(--ivory);display:flex;flex-direction:column;align-items:center;justify-content:center;gap:26px;transition:opacity .8s cubic-bezier(.16,1,.3,1),visibility .8s`)}>
-    <img src="assets/brand/logo-440.webp" alt="" width="440" height="283" style={css(`width:min(260px,52vw);height:auto;opacity:0;transition:opacity .8s ease .1s`)} ref={loaderMarkRef} />
-    <div style={css(`width:min(240px,46vw);height:1px;background:rgba(10,61,28,.14);position:relative;overflow:hidden`)}>
-      <div style={css(`position:absolute;inset:0;background:var(--pink);transform-origin:left;animation:csSweep 1.1s cubic-bezier(.65,0,.35,1) forwards .15s`)}></div>
-    </div>
-    <div style={css(`display:flex;gap:14px;font-size:11px;letter-spacing:.34em;text-transform:uppercase;color:var(--muted);opacity:0;transition:opacity .7s ease .45s`)} ref={loaderTxtRef}>
-      <span>London</span><span style={css(`color:var(--pink)`)}>✦</span><span>Property Care</span>
-    </div>
-  </div>
+  <BrandIntro ref={loaderRef} />
 
   {/* SCROLL PROGRESS */}
   <div style={css(`position:fixed;top:0;left:0;right:0;height:2px;z-index:900;background:transparent;pointer-events:none`)}>
@@ -321,7 +315,7 @@ export default function App({ accentPink = '#E90063', loopSpeed = 64, showLoader
     </div>
   </div>
 
-  <main id="main">
+  <main id="main" tabIndex={-1}>
   {/* HERO */}
   <section id="top" style={css(`position:relative;min-height:100svh;display:flex;flex-direction:column;background:var(--paper);overflow:hidden`)}>
     <div data-r="only-sm" style={css(`background:#fff;padding-top:clamp(72px,11vw,100px)`)}>
@@ -334,8 +328,9 @@ export default function App({ accentPink = '#E90063', loopSpeed = 64, showLoader
     <div data-r="hide-sm" style={css(`position:absolute;inset:0`)}>
     <picture>
       <source media="(min-width:1021px)" type="image/webp" srcSet="assets/hero/hero-desktop-1100.webp 1100w, assets/hero/hero-desktop-1672.webp 1672w" sizes="100vw" />
-      <img ref={heroBgRef} data-r="hide-sm" src={PX} alt="Cleaning Stars — we make it sparkle" width="1672" height="941" decoding="async" style={css(`position:absolute;inset:0;width:100%;height:100%;object-fit:cover;object-position:right center;display:block;will-change:transform`)} />
+      <img ref={heroBgRef} className="cs-hero-art" data-r="hide-sm" src={PX} alt="Cleaning Stars — we make it sparkle" width="1672" height="941" decoding="async" style={css(`position:absolute;inset:0;width:100%;height:100%;object-fit:cover;object-position:right center;display:block;will-change:transform`)} />
     </picture>
+    <div className="cs-hero-light" aria-hidden="true" />
     <div data-r="hide-sm" aria-hidden="true" style={css(`position:absolute;inset:0;background:linear-gradient(90deg,rgba(248,246,240,.82) 0%,rgba(248,246,240,.55) 28%,rgba(248,246,240,0) 50%);pointer-events:none`)}></div>
     </div>
     <div style={css(`position:relative;flex:1;display:flex;align-items:flex-end;width:100%;max-width:1560px;margin:0 auto;padding:clamp(40px,10vh,190px) clamp(20px,5vw,72px) clamp(40px,6vh,72px)`)} data-r="hero-outer">
@@ -528,6 +523,7 @@ export default function App({ accentPink = '#E90063', loopSpeed = 64, showLoader
 
   {/* HOLIDAY LETS */}
   <section id="holiday" style={css(`background:var(--forest);color:var(--ivory);padding:clamp(80px,11vw,170px) clamp(20px,5vw,72px);position:relative;overflow:hidden`)}>
+    <svg className="cs-holiday-star" viewBox="0 0 200 200" aria-hidden="true"><path fill="currentColor" d="M100 0C108 76 124 92 200 100C124 108 108 124 100 200C92 124 76 108 0 100C76 92 92 76 100 0Z" /></svg>
     <div style={css(`max-width:1440px;margin:0 auto`)}>
       <div style={css(`font-size:11px;letter-spacing:.28em;text-transform:uppercase;color:rgba(248,246,240,.55)`)}>Airbnb &amp; holiday lets</div>
       <h2 data-reveal="1" style={css(`font-family:'Instrument Serif',serif;font-weight:400;font-size:clamp(2.8rem,8vw,8rem);line-height:.9;letter-spacing:-.03em;margin:26px 0 0;opacity:0;transform:translateY(28px);transition:all 1s cubic-bezier(.16,1,.3,1)`)}>
@@ -694,7 +690,7 @@ export default function App({ accentPink = '#E90063', loopSpeed = 64, showLoader
           <div style={css(`display:flex;align-items:baseline;gap:12px;margin-bottom:14px`)}><span style={css(`font-size:10px;letter-spacing:.24em;color:var(--pink);font-weight:600`)}>Group 01</span><span style={css(`font-size:12px;letter-spacing:.2em;text-transform:uppercase;color:var(--muted)`)}>Short-stay &amp; hospitality</span></div>
           {groupA.map((s, $index) => (
             <div key={$index} style={css(`border-top:1px solid rgba(17,21,18,.12)`)}>
-              <button type="button" onClick={toggleItem} style={css(`width:100%;display:flex;align-items:center;justify-content:space-between;gap:14px;background:transparent;border:0;padding:18px 0;text-align:left;cursor:pointer;min-height:44px;color:var(--ink);transition:color .35s`)} data-hover="color:#E90063">
+              <button type="button" onClick={toggleItem} aria-expanded="false" style={css(`width:100%;display:flex;align-items:center;justify-content:space-between;gap:14px;background:transparent;border:0;padding:18px 0;text-align:left;cursor:pointer;min-height:44px;color:var(--ink);transition:color .35s`)} data-hover="color:#E90063">
                 <span style={css(`font-size:16px;font-weight:500;letter-spacing:-.01em`)}>{s.t}</span>
                 <span style={css(`font-size:13px;color:var(--pink);transition:transform .4s cubic-bezier(.16,1,.3,1)`)}>+</span>
               </button>
@@ -706,7 +702,7 @@ export default function App({ accentPink = '#E90063', loopSpeed = 64, showLoader
           <div style={css(`display:flex;align-items:baseline;gap:12px;margin-bottom:14px`)}><span style={css(`font-size:10px;letter-spacing:.24em;color:var(--pink);font-weight:600`)}>Group 02</span><span style={css(`font-size:12px;letter-spacing:.2em;text-transform:uppercase;color:var(--muted)`)}>Home &amp; residential</span></div>
           {groupB.map((s, $index) => (
             <div key={$index} style={css(`border-top:1px solid rgba(17,21,18,.12)`)}>
-              <button type="button" onClick={toggleItem} style={css(`width:100%;display:flex;align-items:center;justify-content:space-between;gap:14px;background:transparent;border:0;padding:18px 0;text-align:left;cursor:pointer;min-height:44px;color:var(--ink);transition:color .35s`)} data-hover="color:#E90063">
+              <button type="button" onClick={toggleItem} aria-expanded="false" style={css(`width:100%;display:flex;align-items:center;justify-content:space-between;gap:14px;background:transparent;border:0;padding:18px 0;text-align:left;cursor:pointer;min-height:44px;color:var(--ink);transition:color .35s`)} data-hover="color:#E90063">
                 <span style={css(`font-size:16px;font-weight:500;letter-spacing:-.01em`)}>{s.t}</span>
                 <span style={css(`font-size:13px;color:var(--pink);transition:transform .4s cubic-bezier(.16,1,.3,1)`)}>+</span>
               </button>
@@ -718,7 +714,7 @@ export default function App({ accentPink = '#E90063', loopSpeed = 64, showLoader
           <div style={css(`display:flex;align-items:baseline;gap:12px;margin-bottom:14px`)}><span style={css(`font-size:10px;letter-spacing:.24em;color:var(--pink);font-weight:600`)}>Group 03</span><span style={css(`font-size:12px;letter-spacing:.2em;text-transform:uppercase;color:var(--muted)`)}>Property transitions</span></div>
           {groupC.map((s, $index) => (
             <div key={$index} style={css(`border-top:1px solid rgba(17,21,18,.12)`)}>
-              <button type="button" onClick={toggleItem} style={css(`width:100%;display:flex;align-items:center;justify-content:space-between;gap:14px;background:transparent;border:0;padding:18px 0;text-align:left;cursor:pointer;min-height:44px;color:var(--ink);transition:color .35s`)} data-hover="color:#E90063">
+              <button type="button" onClick={toggleItem} aria-expanded="false" style={css(`width:100%;display:flex;align-items:center;justify-content:space-between;gap:14px;background:transparent;border:0;padding:18px 0;text-align:left;cursor:pointer;min-height:44px;color:var(--ink);transition:color .35s`)} data-hover="color:#E90063">
                 <span style={css(`font-size:16px;font-weight:500;letter-spacing:-.01em`)}>{s.t}</span>
                 <span style={css(`font-size:13px;color:var(--pink);transition:transform .4s cubic-bezier(.16,1,.3,1)`)}>+</span>
               </button>
@@ -728,7 +724,7 @@ export default function App({ accentPink = '#E90063', loopSpeed = 64, showLoader
           <div id="commercial" style={css(`display:flex;align-items:baseline;gap:12px;margin:34px 0 14px`)}><span style={css(`font-size:10px;letter-spacing:.24em;color:var(--pink);font-weight:600`)}>Group 04</span><span style={css(`font-size:12px;letter-spacing:.2em;text-transform:uppercase;color:var(--muted)`)}>Business &amp; occasions</span></div>
           {groupD.map((s, $index) => (
             <div key={$index} style={css(`border-top:1px solid rgba(17,21,18,.12)`)}>
-              <button type="button" onClick={toggleItem} style={css(`width:100%;display:flex;align-items:center;justify-content:space-between;gap:14px;background:transparent;border:0;padding:18px 0;text-align:left;cursor:pointer;min-height:44px;color:var(--ink);transition:color .35s`)} data-hover="color:#E90063">
+              <button type="button" onClick={toggleItem} aria-expanded="false" style={css(`width:100%;display:flex;align-items:center;justify-content:space-between;gap:14px;background:transparent;border:0;padding:18px 0;text-align:left;cursor:pointer;min-height:44px;color:var(--ink);transition:color .35s`)} data-hover="color:#E90063">
                 <span style={css(`font-size:16px;font-weight:500;letter-spacing:-.01em`)}>{s.t}</span>
                 <span style={css(`font-size:13px;color:var(--pink);transition:transform .4s cubic-bezier(.16,1,.3,1)`)}>+</span>
               </button>
@@ -746,7 +742,7 @@ export default function App({ accentPink = '#E90063', loopSpeed = 64, showLoader
       <h2 style={css(`font-family:'Instrument Serif',serif;font-weight:400;font-size:clamp(2rem,4.4vw,3.8rem);line-height:1;letter-spacing:-.02em;margin:0 0 clamp(28px,4vw,48px)`)}>Questions, answered</h2>
       {faqs.map((f, $index) => (
         <div key={$index} style={css(`border-top:1px solid rgba(17,21,18,.14)`)}>
-          <button type="button" onClick={toggleItem} style={css(`width:100%;display:flex;align-items:center;justify-content:space-between;gap:18px;background:transparent;border:0;padding:22px 0;text-align:left;cursor:pointer;min-height:44px;color:var(--ink);transition:color .35s`)} data-hover="color:#E90063">
+          <button type="button" onClick={toggleItem} aria-expanded="false" style={css(`width:100%;display:flex;align-items:center;justify-content:space-between;gap:18px;background:transparent;border:0;padding:22px 0;text-align:left;cursor:pointer;min-height:44px;color:var(--ink);transition:color .35s`)} data-hover="color:#E90063">
             <span style={css(`font-family:'Instrument Serif',serif;font-size:clamp(19px,2vw,26px);line-height:1.2;letter-spacing:-.01em`)}>{f.q}</span>
             <span style={css(`font-size:15px;color:var(--pink);transition:transform .4s cubic-bezier(.16,1,.3,1)`)}>+</span>
           </button>
@@ -872,3 +868,4 @@ export default function App({ accentPink = '#E90063', loopSpeed = 64, showLoader
 </div>
   );
 }
+
