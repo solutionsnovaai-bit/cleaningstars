@@ -1,5 +1,5 @@
 const EASE = 'cubic-bezier(.22,1,.36,1)';
-const KEY = 'cleaning-stars-intro-v3';
+const KEY = 'cleaning-stars-intro-v4';
 
 /** Finite native timeline. Cleanup restores focus, scroll and inert state even in StrictMode. */
 export function runBrandIntro(root, refs, props, onReady) {
@@ -14,9 +14,9 @@ export function runBrandIntro(root, refs, props, onReady) {
   const forced = new URLSearchParams(window.location.search).get('intro') === '1';
   const skip = !el || props.showLoader === false || reduced.matches || (!forced && (location.hash || window.scrollY > 40));
   const schedule = (fn, delay) => { const id = setTimeout(() => { if (!disposed) fn(); }, delay); timers.push(id); };
-  const animate = (target, frames, duration, delay = 0, easing = EASE) => {
+  const animate = (target, frames, duration, delay = 0, easing = EASE, fill = 'both') => {
     if (!target?.animate) return null;
-    const animation = target.animate(frames, { duration, delay, easing, fill: 'both' });
+    const animation = target.animate(frames, { duration, delay, easing, fill });
     animations.push(animation);
     return animation;
   };
@@ -49,7 +49,7 @@ export function runBrandIntro(root, refs, props, onReady) {
       { clipPath: 'polygon(0 0,100% 0,100% 0,0 15%)', opacity: 1, offset: .85 },
       { clipPath: 'polygon(0 0,100% 0,100% 0,0 0)', opacity: 0 }
     ], 920);
-    animate(el.querySelector('.cs-intro__stage'), [{ transform: 'translateY(0) scale(1)' }, { transform: 'translateY(-110px) scale(1.28)' }], 850);
+    animate(el.querySelector('.cs-intro__stage'), [{ transform: 'translateY(0) scale(1)' }, { transform: 'translateY(-54px) scale(1.06)' }], 850);
     schedule(() => { el.hidden = true; animations.forEach(a => a.cancel()); }, 940);
   }
   const skipIntro = () => finish(true);
@@ -96,32 +96,36 @@ export function runBrandIntro(root, refs, props, onReady) {
     return destroy;
   }
 
-  el.querySelectorAll('.cs-intro__comet path').forEach((path, i) => animate(path, [{ strokeDashoffset: 1, opacity: 0 }, { opacity: .65, offset: .15 }, { strokeDashoffset: 0, opacity: 0 }], 1350, i * 90, 'cubic-bezier(.45,0,.2,1)'));
-  animate(el.querySelector('.cs-intro__halo'), [{ opacity: 0, transform: 'scale(.55)' }, { opacity: .85, offset: .4 }, { opacity: 0, transform: 'scale(1.6)' }], 1600);
-  animate(el.querySelector('.cs-intro__orbit'), [{ opacity: 0, transform: 'scale(.55) rotate(-32deg)' }, { opacity: .6, offset: .28 }, { opacity: 0, transform: 'scale(1.4) rotate(20deg)' }], 1450);
-  animate(el.querySelector('.cs-intro__paper'), [{ clipPath: 'circle(0% at 65% 38%)' }, { clipPath: 'circle(150% at 65% 38%)' }], 1200, 380, 'cubic-bezier(.65,0,.2,1)');
+  animate(el.querySelector('.cs-intro__halo'), [{ opacity: .18, transform: 'scale(.8)' }, { opacity: .7, offset: .4 }, { opacity: 0, transform: 'scale(1.35)' }], 1700);
+  animate(el.querySelector('.cs-intro__paper'), [{ clipPath: 'circle(0% at 65% 38%)' }, { clipPath: 'circle(150% at 65% 38%)' }], 1250, 420, 'cubic-bezier(.55,0,.2,1)');
   animate(el.querySelector('.cs-intro__top'), [{ opacity: 0 }, { opacity: .55, offset: .3 }, { opacity: 0 }], 1700);
   animate(el.querySelector('.cs-intro__bottom'), [{ color: '#d9e1d7' }, { color: '#42634c' }], 600, 850);
-  animate(el.querySelector('.cs-intro__rule i'), [{ transform: 'scaleX(0)' }, { transform: 'scaleX(1)' }], 2900, 0, 'linear');
+  animate(el.querySelector('.cs-intro__rule i'), [{ transform: 'scaleX(0)' }, { transform: 'scaleX(1)' }], 3180, 0, 'linear');
 
   const main = el.querySelector('[data-intro-star="0"]');
+  // The macro camera move uses only a smooth SVG silhouette, never an enlarged bitmap.
   animate(main, [
-    { opacity: 1, transform: 'translate(-345px,270px) rotate(-65deg) scale(10)' },
-    { opacity: 1, transform: 'translate(-300px,220px) rotate(-24deg) scale(3.4)', offset: .38 },
+    { opacity: 0, transform: 'translate(-345px,270px) rotate(-16deg) scale(4.6)' },
+    { opacity: 1, transform: 'translate(-345px,270px) rotate(-12deg) scale(4.25)', offset: .16 },
+    { opacity: 1, transform: 'translate(-185px,140px) rotate(-5deg) scale(2.5)', offset: .55 },
     { opacity: 1, transform: 'translate(0,0) rotate(0deg) scale(1)' }
-  ], 1500, 0, 'cubic-bezier(.65,0,.18,1)');
+  ], 1650, 0, 'cubic-bezier(.45,0,.18,1)');
   el.querySelectorAll('[data-intro-star]').forEach((star, i) => {
     if (!i) return;
     const direction = i % 2 ? -1 : 1;
-    animate(star, [{ opacity: 0, transform: `translate(${direction * (75 + i * 9)}px,${65 - i * 18}px) rotate(${direction * 55}deg) scale(.15)` }, { opacity: 1, transform: 'translate(0,0) rotate(0deg) scale(1)' }], 950, 740 + i * 65);
+    animate(star, [{ opacity: 0, transform: `translate(${direction * (30 + i * 4)}px,${30 - i * 7}px) rotate(${direction * 18}deg) scale(.55)` }, { opacity: 1, transform: 'translate(0,0) rotate(0deg) scale(1)' }], 850, 980 + i * 60);
   });
-  [['cleaning', 680, 1350], ['stars', 1130, 1050], ['swoosh', 1720, 750]].forEach(([name, delay, duration]) => {
+  [['cleaning', 740, 1390], ['stars', 1230, 1080], ['swoosh', 1900, 720]].forEach(([name, delay, duration]) => {
     animate(el.querySelector(`[data-draw="${name}"]`), [{ strokeDashoffset: 1 }, { strokeDashoffset: 0 }], duration, delay, 'cubic-bezier(.35,.05,.3,1)');
   });
-  animate(el.querySelector('[data-intro-dot]'), [{ opacity: 0, transform: 'translateY(-18px)' }, { opacity: 1, transform: 'translateY(0)' }], 500, 1570);
-  animate(el.querySelector('[data-intro-tagline]'), [{ opacity: 0, transform: 'translateY(18px)' }, { opacity: 1, transform: 'translateY(0)' }], 550, 2180);
-  animate(el.querySelector('[data-intro-master]'), [{ opacity: 0 }, { opacity: 1 }], 180, 2450);
-  animate(el.querySelector('[data-intro-shine]'), [{ opacity: 0, transform: 'translateX(0) skewX(-20deg)' }, { opacity: .75, offset: .25 }, { opacity: 0, transform: 'translateX(1850px) skewX(-20deg)' }], 750, 2480);
-  schedule(() => finish(), 3100);
+  animate(el.querySelector('[data-intro-dot]'), [{ opacity: 0, transform: 'translateY(-18px)' }, { opacity: 1, transform: 'translateY(0)' }], 500, 1690);
+  animate(el.querySelector('[data-intro-tagline]'), [{ opacity: 0, transform: 'translateY(18px)' }, { opacity: 1, transform: 'translateY(0)' }], 560, 2350);
+  animate(el.querySelector('[data-intro-master]'), [{ opacity: 0 }, { opacity: 1 }], 260, 2640);
+  el.querySelectorAll('[data-intro-star]').forEach(star => {
+    // No backwards fill: the handoff must not override the stars' entrance opacity.
+    animate(star, [{ opacity: 1 }, { opacity: 0 }], 260, 2640, 'linear', 'forwards');
+  });
+  animate(el.querySelector('[data-intro-shine]'), [{ opacity: 0, transform: 'translateX(0) skewX(-20deg)' }, { opacity: .75, offset: .25 }, { opacity: 0, transform: 'translateX(1850px) skewX(-20deg)' }], 700, 2710);
+  schedule(() => finish(), 3280);
   return destroy;
 }

@@ -4,14 +4,11 @@ html{scrollbar-gutter:stable}
 .cs-intro{position:fixed;inset:0;z-index:9999;display:grid;place-items:center;overflow:hidden;background:#061f14;color:#e8ede2;isolation:isolate;outline:none;animation:cs-intro-failsafe .01s 6.5s forwards}
 .cs-intro[hidden]{display:none}
 .cs-intro__paper{position:absolute;inset:0;background:radial-gradient(ellipse at 73% 28%,#fffdf8,#f4f0e6 85%);clip-path:circle(0% at 65% 38%)}
-.cs-intro__paper::after{content:"";position:absolute;inset:0;opacity:.24;background-image:url("data:image/svg+xml,%3Csvg viewBox='0 0 160 160' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='.9' numOctaves='3' stitchTiles='stitch'/%3E%3C/filter%3E%3Cpath fill='%23817764' opacity='.16' filter='url(%23n)' d='M0 0h160v160H0z'/%3E%3C/svg%3E")}
 .cs-intro__halo{position:absolute;width:110vmax;height:110vmax;background:radial-gradient(ellipse,rgba(233,0,99,.19),rgba(58,105,53,.1) 30%,transparent 62%);opacity:0}
-.cs-intro__orbit{position:absolute;width:min(76vw,650px);aspect-ratio:1;border:1px solid rgba(225,235,210,.12);border-radius:50%;opacity:0}
-.cs-intro__orbit i{position:absolute;inset:12%;border:1px solid rgba(225,235,210,.12);border-radius:50%;transform:rotateX(65deg) rotateZ(-35deg)}
-.cs-intro__orbit i+i{inset:-20%;transform:rotateX(65deg) rotateZ(35deg)}
 .cs-intro__stage{position:relative;width:min(590px,82vw,76svh);aspect-ratio:1195/915;margin-top:-3vh}
 .cs-intro__logo{display:block;width:100%;height:100%;overflow:visible}
 .cs-intro__star{opacity:0;transform-box:fill-box;transform-origin:center}
+.cs-intro__star path{shape-rendering:geometricPrecision}
 .cs-intro__top{position:absolute;top:clamp(28px,5vw,64px);left:clamp(24px,5vw,72px);right:clamp(24px,5vw,72px);display:flex;justify-content:space-between;font-size:9px;letter-spacing:.24em;text-transform:uppercase;opacity:0}
 .cs-intro__bottom{position:absolute;bottom:max(32px,6svh);left:clamp(24px,5vw,72px);right:clamp(24px,5vw,72px);display:grid;grid-template-columns:1fr 100px 1fr;align-items:center;gap:24px;font-size:9px;letter-spacing:.23em;text-transform:uppercase;color:#d9e1d7}
 .cs-intro__bottom>span:first-child{display:flex;align-items:center;gap:15px}
@@ -97,9 +94,6 @@ html{scrollbar-gutter:stable}
 /* The signature is now a full-scale opening, with a fast macro-to-mark camera move. */
 .cs-intro__stage{width:min(780px,90vw,87svh);margin-top:-2vh}
 .cs-intro__halo{background:radial-gradient(ellipse,rgba(233,0,99,.33),rgba(58,105,53,.16) 30%,transparent 62%)}
-.cs-intro__comet{position:absolute;inset:0;width:100%;height:100%;overflow:visible;pointer-events:none}
-.cs-intro__comet path{fill:none;stroke:#ff5b9e;stroke-width:2;stroke-dasharray:1 1;stroke-dashoffset:1;opacity:0}
-.cs-intro__comet path+path{stroke:#d2dfad;stroke-width:.7}
 #main:focus{outline:none}
 
 /* Decorative layers live inside the existing sections and never intercept input. */

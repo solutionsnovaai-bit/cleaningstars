@@ -64,3 +64,7 @@ Nine existing sections now include viewport-scoped floating stars, scroll-drawn 
 The six oven comparison photos in `public/assets/before-after-clean/` have only their baked-in Before/After captions and yellow sparkle overlays removed using the built-in image editing tool; original source files are retained. Each has a 600px and 320px WebP. All eight result pairs use HTML captions.
 
 Editing prompt (each source supplied separately): Remove ONLY the superimposed white Before/After word and, where present, its yellow sparkle emoji. Inpaint only the lettering footprint with the original surface behind it. Preserve framing, perspective, geometry, colors, reflections, visible stains, grime, residue, scratches and the actual condition of the oven. Do not clean, enhance, polish or beautify. No additional text.
+
+### Intro edge refinement
+
+All moving intro stars are now native SVG paths with pink or green gradients. The macro star no longer uses the small WebP cutout, which contained pale matte pixels and unrelated green fragments. Its maximum scale is reduced from 10× to 4.6×; the camera and satellite stars use gentler rotations. Lettering and the final signature still resolve to the supplied brand artwork. The intro grain and orbital strokes are removed, and the exit no longer magnifies the logo aggressively.
