@@ -1,5 +1,4 @@
 const EASE = 'cubic-bezier(.22,1,.36,1)';
-const KEY = 'cleaning-stars-intro-v4';
 
 /** Finite native timeline. Cleanup restores focus, scroll and inert state even in StrictMode. */
 export function runBrandIntro(root, refs, props, onReady) {
@@ -9,10 +8,8 @@ export function runBrandIntro(root, refs, props, onReady) {
   let disposed = false, leaving = false, ready = false, locked = false;
   const oldOverflow = document.documentElement.style.overflow;
   const oldFocus = document.activeElement;
-  let seen = false;
-  try { seen = sessionStorage.getItem(KEY) === '1'; } catch { /* Storage is optional. */ }
-  const forced = new URLSearchParams(window.location.search).get('intro') === '1';
-  const skip = !el || props.showLoader === false || reduced.matches || (!forced && (location.hash || window.scrollY > 40));
+  // Replay the full timeline on every page load, including anchored or restored-scroll reloads.
+  const skip = !el || props.showLoader === false || reduced.matches;
   const schedule = (fn, delay) => { const id = setTimeout(() => { if (!disposed) fn(); }, delay); timers.push(id); };
   const animate = (target, frames, duration, delay = 0, easing = EASE, fill = 'both') => {
     if (!target?.animate) return null;
@@ -40,7 +37,6 @@ export function runBrandIntro(root, refs, props, onReady) {
   function finish(immediate = false) {
     if (leaving || disposed) return;
     leaving = true;
-    try { sessionStorage.setItem(KEY, '1'); } catch { /* Storage is optional. */ }
     reveal();
     el.style.pointerEvents = 'none';
     if (immediate || reduced.matches) { el.hidden = true; return; }
@@ -87,14 +83,6 @@ export function runBrandIntro(root, refs, props, onReady) {
   window.addEventListener('pagehide', skipIntro);
   // Never leave a visitor behind a loading screen, including failed image decoding.
   schedule(() => finish(true), 5400);
-
-  if (seen && !forced) {
-    el.querySelector('.cs-intro__bottom').style.color = '#42634c';
-    animate(el.querySelector('.cs-intro__paper'), [{ clipPath: 'circle(150% at 65% 38%)' }], 1);
-    animate(el.querySelector('[data-intro-master]'), [{ opacity: 0, transform: 'translateY(12px)' }, { opacity: 1, transform: 'translateY(0)' }], 500);
-    schedule(() => finish(), 650);
-    return destroy;
-  }
 
   animate(el.querySelector('.cs-intro__halo'), [{ opacity: .18, transform: 'scale(.8)' }, { opacity: .7, offset: .4 }, { opacity: 0, transform: 'scale(1.35)' }], 1700);
   animate(el.querySelector('.cs-intro__paper'), [{ clipPath: 'circle(0% at 65% 38%)' }, { clipPath: 'circle(150% at 65% 38%)' }], 1250, 420, 'cubic-bezier(.55,0,.2,1)');

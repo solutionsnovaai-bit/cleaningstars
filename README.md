@@ -53,7 +53,7 @@ Vite framework, build command and output directory, so no extra configuration is
 
 ## Motion direction
 
-The original layout is retained. The native intro assembles layers extracted from the official logo, then hands off to the hero. First visit: approximately 4 seconds including the exit; repeat visits in the same tab: a short signature. Skip intro or Escape bypasses it. `?intro=1` replays the full introduction. Reduced-motion visitors and deep links bypass the intro.
+The original layout is retained. The native intro assembles layers extracted from the official logo, then hands off to the page. The full sequence plays on every page load or refresh, including repeat visits, anchored URLs and restored scroll positions, and lasts approximately 4 seconds including the exit. It does not depend on browser storage or a special query parameter. Skip intro or Escape bypasses it; reduced-motion preferences and the `showLoader` prop are respected.
 
 `src/intro.js` owns the finite timeline and restores scroll, focus and inert state on every exit. `src/motion.js` handles word masks, media reveals and viewport-scoped scroll motion without scroll hijacking. `src/motion.css` includes mobile and reduced-motion treatments. Brand layers live in `public/assets/motion/`. No new JavaScript dependencies.
 
